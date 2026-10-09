@@ -10,7 +10,7 @@
           <div class="panel-inner">
             <h1 class="system-title">擎工可视化系统</h1>
             <!-- 装饰组件放到标题下方 -->
-            <dv-decoration-5 style="width:400px;height:40px;" class="title-decoration" />
+            <dv-decoration-5 style="width: 400px; height: 40px" class="title-decoration" />
             <!-- 注册标题 -->
             <div class="tab-text">账号注册</div>
             <div class="step-container">
@@ -33,7 +33,9 @@
                   <!-- 单行提示，和找回密码保持一致 -->
                   <div class="msg-line">
                     <span v-if="accountError" class="error-text">{{ accountError }}</span>
-                    <span v-else-if="showAccountTip" class="tip-text">6~18个字符，可使用字母、数字、下划线，需要以字母开头</span>
+                    <span v-else-if="showAccountTip" class="tip-text"
+                      >6~18个字符，可使用字母、数字、下划线，需要以字母开头</span
+                    >
                   </div>
                 </div>
                 <!-- 邮箱验证码输入框 + 获取验证码按钮 -->
@@ -45,11 +47,7 @@
                       placeholder="请输入邮箱验证码"
                       v-model="registerForm.code"
                     />
-                    <button
-                      class="get-code-btn"
-                      @click="getCode"
-                      :disabled="countDown > 0"
-                    >
+                    <button class="get-code-btn" @click="getCode" :disabled="countDown > 0">
                       {{ countDown > 0 ? `${countDown}s后重发` : '获取验证码' }}
                     </button>
                   </div>
@@ -86,9 +84,21 @@
                       @blur="validatePwd"
                     />
                     <div class="pwd-icon-group">
-                      <i v-if="registerForm.password" class="my-icon input-clear" @click="registerForm.password=''">&#xe602;</i>
-                      <i v-if="pwdVisible" class="my-icon input-eye" @click="pwdVisible = !pwdVisible">&#xe63d;</i>
-                      <i v-else class="my-icon input-eye" @click="pwdVisible = !pwdVisible">&#xe653;</i>
+                      <i
+                        v-if="registerForm.password"
+                        class="my-icon input-clear"
+                        @click="registerForm.password = ''"
+                        >&#xe602;</i
+                      >
+                      <i
+                        v-if="pwdVisible"
+                        class="my-icon input-eye"
+                        @click="pwdVisible = !pwdVisible"
+                        >&#xe63d;</i
+                      >
+                      <i v-else class="my-icon input-eye" @click="pwdVisible = !pwdVisible"
+                        >&#xe653;</i
+                      >
                     </div>
                   </div>
                   <div class="msg-line">
@@ -108,9 +118,24 @@
                       @blur="validateConfirmPwd"
                     />
                     <div class="pwd-icon-group">
-                      <i v-if="registerForm.confirmPwd" class="my-icon input-clear" @click="registerForm.confirmPwd=''">&#xe602;</i>
-                      <i v-if="confirmPwdVisible" class="my-icon input-eye" @click="confirmPwdVisible = !confirmPwdVisible">&#xe63d;</i>
-                      <i v-else class="my-icon input-eye" @click="confirmPwdVisible = !confirmPwdVisible">&#xe653;</i>
+                      <i
+                        v-if="registerForm.confirmPwd"
+                        class="my-icon input-clear"
+                        @click="registerForm.confirmPwd = ''"
+                        >&#xe602;</i
+                      >
+                      <i
+                        v-if="confirmPwdVisible"
+                        class="my-icon input-eye"
+                        @click="confirmPwdVisible = !confirmPwdVisible"
+                        >&#xe63d;</i
+                      >
+                      <i
+                        v-else
+                        class="my-icon input-eye"
+                        @click="confirmPwdVisible = !confirmPwdVisible"
+                        >&#xe653;</i
+                      >
                     </div>
                   </div>
                   <div class="msg-line">
@@ -119,7 +144,7 @@
                 </div>
               </div>
             </div>
-    <!-- 提示信息，在按钮上方【固定占位，永远存在，不会挤按钮】 -->
+            <!-- 提示信息，在按钮上方【固定占位，永远存在，不会挤按钮】 -->
             <div class="msg-bottom" :class="msgType">
               {{ msgText || '　' }}
             </div>
@@ -128,7 +153,9 @@
             </button>
             <!-- 返回登录【添加箭头在文字后面】 -->
             <div class="row-link">
-              <span class="link-item" @click="goLogin">返回登录 <i class="my-icon back-arrow">&#xe61d;</i></span>
+              <span class="link-item" @click="goLogin"
+                >返回登录 <i class="my-icon back-arrow">&#xe61d;</i></span
+              >
             </div>
             <div class="footer-text">版权所有 © 2025 KY-Horizon 自动化技术（天津）有限公司</div>
           </div>
@@ -149,7 +176,7 @@ const registerForm = ref({
   account: '',
   code: '',
   password: '',
-  confirmPwd: ''
+  confirmPwd: '',
 })
 const pwdVisible = ref(false)
 const confirmPwdVisible = ref(false)
@@ -170,7 +197,6 @@ const msgType = ref('error') // error / success
 const accountReg = /^[a-zA-Z][a-zA-Z0-9_]{5,17}$/
 // =========密码正则 8位以上，字母+数字，无空格=========
 const pwdReg = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/
-
 // 密码实时校验函数
 const validatePwd = () => {
   const val = registerForm.value.password.trim()
@@ -193,33 +219,38 @@ const validateConfirmPwd = () => {
     confirmPwdError.value = ''
     return false
   }
-  if(pwd !== confirm){
+  if (pwd !== confirm) {
     confirmPwdError.value = '两次输入密码不一致'
     return false
   }
   confirmPwdError.value = ''
   return true
 }
-
 // 监听表单输入，修改输入框自动清空错误提示
-watch([
+watch(
+  [
+    () => registerForm.value.account,
+    () => registerForm.value.code,
+    () => registerForm.value.password,
+    () => registerForm.value.confirmPwd,
+  ],
+  () => {
+    msgText.value = ''
+    codeError.value = ''
+    pwdError.value = ''
+    confirmPwdError.value = ''
+  },
+)
+watch(
   () => registerForm.value.account,
-  () => registerForm.value.code,
-  () => registerForm.value.password,
-  () => registerForm.value.confirmPwd
-], () => {
-  msgText.value = ''
-  codeError.value = ''
-  pwdError.value = ''
-  confirmPwdError.value = ''
-})
-watch(() => registerForm.value.account, (val) => {
-  if (val.includes('@')) {
-    registerForm.value.account = val.split('@')[0]
-  }
-  // 输入变化清空错误
-  accountError.value = ''
-})
+  (val) => {
+    if (val.includes('@')) {
+      registerForm.value.account = val.split('@')[0]
+    }
+    // 输入变化清空错误
+    accountError.value = ''
+  },
+)
 // 账号失去焦点：隐藏提示文字，执行校验
 const handleAccountBlur = () => {
   showAccountTip.value = false
@@ -254,9 +285,11 @@ const getCode = async () => {
   // ✅ 点击获取验证码，先清空底部提示文字（解决旧提示残留）
   msgText.value = ''
   try {
+    // axios返回的整体对象，后端业务数据在 .data
     const res = await sendEmailCode({ username: account })
-    // res 就是后端 Result 对象 {code,message,data}
-    if (res.code === 200) {
+    const result = res.data
+    // result = {code:500, message:"xxx", data:null}
+    if (result.code === 200) {
       // 接口成功，启动60秒倒计时
       countDown.value = 60
       const timer = setInterval(() => {
@@ -266,16 +299,23 @@ const getCode = async () => {
         }
       }, 1000)
     } else {
-      // 业务失败：400，次数超限、发送频繁、账号已注册
-      showMsg(res.message)
+      // 业务失败：code不等于200，展示后端message
+      showMsg(result.message)
     }
   } catch (err) {
-    // 捕获axios超时，替换英文提示
+    // 捕获axios超时、网络异常
     if (err.message.includes('timeout')) {
-      showMsg("服务请求超时，缓存服务异常，请检查Redis是否启动")
+      showMsg('服务请求超时，缓存服务异常，请检查Redis是否启动')
     } else {
-      // 【这里会捕获后端抛出的 "该账号已经注册"】
-      showMsg(err?.message || "发送失败")
+      let errMsg = '发送失败'
+      if (err?.response?.data) {
+        if (typeof err.response.data === 'string') {
+          errMsg = err.response.data
+        } else if (err.response.data.message) {
+          errMsg = err.response.data.message
+        }
+      }
+      showMsg(errMsg)
     }
   }
 }
@@ -284,22 +324,24 @@ const handleRegister = async () => {
   // 第一步：校验账号+验证码，切换到密码页面
   if (step.value === 1) {
     if (!registerForm.value.account) {
-      accountError.value = "请输入账号"
+      accountError.value = '请输入账号'
       return
     }
     if (!validateAccount()) return
     if (!registerForm.value.code) {
-      codeError.value = "请输入邮箱验证码"
+      codeError.value = '请输入邮箱验证码'
       return
     }
     try {
       const res = await checkEmailCode({
         username: registerForm.value.account.trim(),
-        code: registerForm.value.code
+        code: registerForm.value.code,
       })
-      if (res.code !== 200) {
-        // ========= 验证码校验失败，错误显示在验证码输入框下方 =========
-        codeError.value = res.message
+      // ========= 修复：取出 res.data 业务返回对象，和getCode逻辑统一 =========
+      const result = res.data
+      if (result.code !== 200) {
+        // 验证码校验失败，错误显示在验证码输入框下方
+        codeError.value = result.message
         return
       }
       // 校验成功，切换到第二步
@@ -307,8 +349,8 @@ const handleRegister = async () => {
       accountDisabled.value = true
       msgText.value = ''
     } catch (err) {
-      // ========= 接口异常，错误在验证码下方 =========
-      codeError.value = err?.message || "验证码校验失败"
+      // 接口异常，错误在验证码下方
+      codeError.value = err?.message || '验证码校验失败'
     }
   }
   // 第二步：提交密码完成注册
@@ -316,21 +358,21 @@ const handleRegister = async () => {
     // 点击注册兜底校验（复用函数）
     if (!validatePwd()) return
     if (!validateConfirmPwd()) return
-
     try {
       const res = await register({
         username: registerForm.value.account.trim(),
         password: registerForm.value.password,
-        code: registerForm.value.code
+        code: registerForm.value.code,
       })
-      if (res.code === 200) {
-        showMsg("注册成功！即将跳转登录页", "success")
+      const result = res.data
+      if (result.code === 200) {
+        showMsg('注册成功！即将跳转登录页', 'success')
         setTimeout(() => {
           router.push('/login')
         }, 1200)
       }
     } catch (err) {
-      showMsg(err?.message || "注册失败")
+      showMsg(err?.message || '注册失败')
     }
   }
 }
@@ -341,11 +383,11 @@ const goLogin = () => {
 </script>
 <style scoped>
 @font-face {
-  font-family: "my-icon";
+  font-family: 'my-icon';
   src: url('@/assets/icon/iconfont.ttf') format('truetype');
 }
 .my-icon {
-  font-family: "my-icon" !important;
+  font-family: 'my-icon' !important;
   font-style: normal;
   -webkit-font-smoothing: antialiased;
 }
@@ -418,7 +460,7 @@ const goLogin = () => {
   filter: drop-shadow(0 0 6px #3374cc);
 }
 /* =========重点新增固定高度容器 =========*/
-.step-container{
+.step-container {
   height: 200px;
 }
 .input-item {
@@ -426,12 +468,12 @@ const goLogin = () => {
 }
 .input-wrap {
   position: relative;
-  width:100%;
+  width: 100%;
 }
 .msg-line {
-  margin-top:4px;
-  font-size:12px;
-  line-height:1.4;
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.4;
   /* 默认左对齐，不用额外设置，和账号提示保持一样 */
 }
 .tip-text {
@@ -443,22 +485,22 @@ const goLogin = () => {
 /* ========== 验证码行样式 ========== */
 .code-wrap {
   display: flex;
-  gap:10px;
+  gap: 10px;
 }
 .code-input {
-  flex:1;
+  flex: 1;
   padding-right: 10px !important;
 }
 .get-code-btn {
   width: 130px;
-  height:44px;
-  flex-shrink:0;
-  font-size:14px;
+  height: 44px;
+  flex-shrink: 0;
+  font-size: 14px;
   background: linear-gradient(90deg, #0c57bb, #1580e8);
   border: none;
-  color:#fff;
-  border-radius:10px;
-  cursor:pointer;
+  color: #fff;
+  border-radius: 10px;
+  cursor: pointer;
   box-shadow: 0 0 8px #1580e866;
   transition: all 0.2s ease;
 }
@@ -473,28 +515,28 @@ const goLogin = () => {
   transform: scale(0.98);
 }
 .get-code-btn:disabled {
-  background:#445880;
-  cursor:not-allowed;
-  box-shadow:none;
-  transform:none;
+  background: #445880;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
 }
 .input-icon {
   position: absolute;
-  left:16px;
+  left: 16px;
   top: 50%;
   transform: translateY(-50%);
-  font-size:20px;
-  color:#92bfff;
-  z-index:2;
+  font-size: 20px;
+  color: #92bfff;
+  z-index: 2;
 }
 .input-suffix {
   position: absolute;
-  right:16px;
+  right: 16px;
   top: 50%;
   transform: translateY(-50%);
-  font-size:16px;
-  color:#92bfff;
-  z-index:2;
+  font-size: 16px;
+  color: #92bfff;
+  z-index: 2;
   pointer-events: none;
 }
 .pwd-icon-group {
@@ -502,19 +544,19 @@ const goLogin = () => {
   right: 16px;
   top: 50%;
   transform: translateY(-50%);
-  z-index:2;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: 10px;
 }
 .input-clear {
-  font-size:15px;
-  color:#92bfff;
+  font-size: 15px;
+  color: #92bfff;
   cursor: pointer;
 }
 .input-eye {
-  font-size:20px;
-  color:#92bfff;
+  font-size: 20px;
+  color: #92bfff;
   cursor: pointer;
 }
 .input-box {
@@ -530,16 +572,16 @@ const goLogin = () => {
   outline: none;
   transition: border-color 0.2s;
 }
-.account-input{
+.account-input {
   padding-right: 140px;
 }
 /* 禁用状态样式优化 */
-.input-box:disabled{
+.input-box:disabled {
   background: rgba(20, 50, 90, 0.25);
-  color:#a0b8d8;
+  color: #a0b8d8;
   cursor: not-allowed;
 }
-.pwd-input{
+.pwd-input {
   padding-right: 70px;
   -webkit-appearance: none;
 }
@@ -589,21 +631,21 @@ const goLogin = () => {
   justify-content: center;
   align-items: center;
   margin: 16px 0 24px;
-  font-size:14px;
+  font-size: 14px;
 }
 .split-line {
-  color:#69b8ff;
+  color: #69b8ff;
 }
 .link-item {
   color: #69b8ff;
   cursor: pointer;
-  display:flex;
-  align-items:center;
-  gap:4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   transition: color 0.2s;
 }
-.back-arrow{
-  font-size:16px;
+.back-arrow {
+  font-size: 16px;
 }
 .link-item:hover {
   color: #ffffff;
@@ -615,15 +657,15 @@ const goLogin = () => {
   font-size: 12px;
 }
 /* 按钮上方提示文字 */
-.msg-bottom{
+.msg-bottom {
   text-align: center;
-  font-size:14px;
-  margin-bottom:12px;
+  font-size: 14px;
+  margin-bottom: 12px;
 }
-.msg-bottom.error{
+.msg-bottom.error {
   color: #ff7875;
 }
-.msg-bottom.success{
+.msg-bottom.success {
   color: #73e7a7;
 }
 </style>

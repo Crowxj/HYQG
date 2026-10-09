@@ -4,7 +4,9 @@ import com.kyhorizon.hyqgsbs.common.util.CodeUtil;
 import com.kyhorizon.hyqgsbs.common.util.EmailUtil;
 import com.kyhorizon.hyqgsbs.common.util.JwtUtil;
 import com.kyhorizon.hyqgsbs.entity.SysAccount;
+import com.kyhorizon.hyqgsbs.entity.SysAccountWhitelist;
 import com.kyhorizon.hyqgsbs.mapper.SysAccountMapper;
+import com.kyhorizon.hyqgsbs.mapper.SysAccountWhitelistMapper;
 import com.kyhorizon.hyqgsbs.service.AuthService;
 import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +39,9 @@ public class AuthServiceImpl implements AuthService {
     private SysAccountMapper sysAccountMapper;
 
     @Autowired
+    private SysAccountWhitelistMapper sysAccountWhitelistMapper;
+
+    @Autowired
     private EmailUtil emailUtil;
 
     private final BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
@@ -51,23 +56,25 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("账号不能为空");
         }
 
-        // 先拼出完整邮箱
+        // 拼出完整邮箱
         String email = username + EmailUtil.EMAIL_SUFFIX;
 
-        // ==========用完整邮箱去数据库查 ==========
+        SysAccountWhitelist whitelist = sysAccountWhitelistMapper.selectByUsername(email);
+        if (whitelist == null) {
+            // 不在白名单，抛出异常，前端捕获提示
+            throw new RuntimeException(email + " 不在注册白名单，无法注册");
+        }
         SysAccount existAccount = sysAccountMapper.selectByUsername(email);
         if (existAccount != null) {
-            throw new RuntimeException("该账号已经注册，无法获取验证码");
+            throw new RuntimeException(email +"已经注册，无法获取验证码");
         }
 
-        // ===================== 1. 60秒冷却校验 =====================
         String limitKey = EmailUtil.REDIS_SEND_LIMIT_PREFIX + email;
         Boolean isCooling = stringRedisTemplate.hasKey(limitKey);
         if (Boolean.TRUE.equals(isCooling)) {
             throw new RuntimeException("邮件发送过于频繁，请" + EmailUtil.SEND_INTERVAL_SECONDS + "秒后再试");
         }
 
-        // ===================== 2. 每日发送次数校验=====================
         String dailyKey = EmailUtil.REDIS_SEND_DAILY_PREFIX + email;
         String countStr = stringRedisTemplate.opsForValue().get(dailyKey);
         Long todayCount = countStr == null ? 0L : Long.parseLong(countStr);
@@ -147,7 +154,7 @@ public class AuthServiceImpl implements AuthService {
         if (!password.matches(pwdPattern)) {
             throw new RuntimeException("密码至少8个字符，必须包含字母和数字，不能包含空格");
         }
-        // 数据库注册事务
+        // 数据库注册事务方法
         doRegisterDb(email, password);
 
         //注册成功，清理缓存
@@ -157,7 +164,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     /**
-     * 数据库操作事务方法
+     * 数据库操作事务方法【已新增 account.setAccountType(1)】
      */
     private void doRegisterDb(String email, String password) {
         //2.判断账号是否重复（用完整邮箱查）
@@ -176,6 +183,7 @@ public class AuthServiceImpl implements AuthService {
         account.setEmpId(null);
         account.setRoleType(1);
         account.setStatus(1);
+        account.setAccountType(1); // 新增：赋值账号类型
         account.setCreateTime(LocalDateTime.now());
         account.setLastLoginTime(null);
         sysAccountMapper.insert(account);
@@ -188,10 +196,10 @@ public class AuthServiceImpl implements AuthService {
     public String login(Map<String, Object> map) {
         String username = (String) map.get("username");
         String rawPwd = (String) map.get("password");
-        if(username == null || rawPwd == null){
+        if (username == null || rawPwd == null) {
             throw new RuntimeException("账号密码不能为空");
         }
-        // 使用Security进行账号密码校验
+        //使用Security进行账号密码校验
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(username, rawPwd)
         );
@@ -199,7 +207,7 @@ public class AuthServiceImpl implements AuthService {
         SysAccount account = sysAccountMapper.selectByUsername(username);
         account.setLastLoginTime(LocalDateTime.now());
         sysAccountMapper.updateById(account);
-        // 使用JwtUtil生成token
+        //使用JwtUtil生成token
         return jwtUtil.generateToken(username);
     }
 }

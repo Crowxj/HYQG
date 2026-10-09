@@ -4,14 +4,14 @@
 <mapper namespace="com.kyhorizon.hyqgsbs.mapper.SysAccountMapper">
 
     <select id="selectByUsername" resultType="SysAccount">
-        select id,username,password,emp_id,role_type,status,last_login_time,create_time
+        select id,username,password,emp_id,role_type,status,account_type,last_login_time,create_time
         from sys_account
         where username = #{username}
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        insert into sys_account(username, password, emp_id, role_type, status, last_login_time, create_time)
-        values(#{username},#{password},#{empId},#{roleType},#{status},#{lastLoginTime},#{createTime})
+        insert into sys_account(username, password, emp_id, role_type, status, account_type, last_login_time, create_time)
+        values(#{username},#{password},#{empId},#{roleType},#{status},#{accountType},#{lastLoginTime},#{createTime})
     </insert>
 
     <update id="updateById">

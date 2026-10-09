@@ -6,11 +6,12 @@ import java.time.LocalDateTime;
 @Data
 public class SysAccount {
     private Long id;
-    private String username;
-    private String password;
-    private Long empId;
-    private Integer roleType;
-    private Integer status;
-    private LocalDateTime createTime;
-    private LocalDateTime lastLoginTime;
+    private String username;//账号
+    private String password;//密码
+    private Long empId;//员工ID
+    private Integer roleType;//账号权限
+    private Integer status;//账号状态
+    private Integer accountType;//账号类型
+    private LocalDateTime lastLoginTime;//最近一次登录
+    private LocalDateTime createTime;//创建时间
 }

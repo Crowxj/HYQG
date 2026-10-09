@@ -1,7 +1,6 @@
 <template>
   <dv-full-screen-container fit="fill">
     <div class="login-container">
-      <!-- 左上角Logo -->
       <div class="logo-box">
         <img src="@/assets/images/login_logo.webp" alt="浩研汇成LOGO" />
       </div>
@@ -9,11 +8,9 @@
         <dv-border-box-8 class="login-panel">
           <div class="panel-inner">
             <h1 class="system-title">擎工可视化系统</h1>
-            <!-- 装饰组件放到标题下方 -->
-            <dv-decoration-5 style="width:400px;height:40px;" class="title-decoration" />
-            <!-- 账号登录标题 【美化后的Sign In】 -->
+            <dv-decoration-5 style="width: 400px; height: 40px" class="title-decoration" />
             <div class="tab-text">账号登录</div>
-            <!-- 账号输入框（带用户图标 + 右侧固定邮箱后缀@kyhorizon.com） -->
+            <!--账号输入-->
             <div class="input-item">
               <div class="input-wrap">
                 <i class="my-icon input-icon">&#xe63f;</i>
@@ -21,13 +18,13 @@
                   class="input-box account-input"
                   placeholder="请输入账号"
                   v-model="account"
-                  @blur="handleAccountBlur"
+                  @blur="validateAccount"
                   @keyup.enter="handleLogin"
                 />
                 <span class="input-suffix">@kyhorizon.com</span>
               </div>
             </div>
-            <!-- 密码输入框（带锁图标，右侧【图标组：清除、显示/隐藏密码】） -->
+            <!--密码输入-->
             <div class="input-item">
               <div class="input-wrap">
                 <i class="my-icon input-icon">&#xe654;</i>
@@ -38,27 +35,24 @@
                   :type="pwdVisible ? 'text' : 'password'"
                   @keyup.enter="handleLogin"
                 />
-                <!-- 右侧图标容器：清除 + 眼睛 -->
                 <div class="pwd-icon-group">
-                  <i v-if="password" class="my-icon input-clear" @click="password=''">&#xe602;</i>
-                  <i v-if="pwdVisible" class="my-icon input-eye" @click="pwdVisible = !pwdVisible">&#xe63d;</i>
-                  <i v-else class="my-icon input-eye" @click="pwdVisible = !pwdVisible">&#xe653;</i>
+                  <i v-if="password" class="my-icon input-clear" @click="password = ''">&#xe602;</i>
+                  <i class="my-icon input-eye" @click="pwdVisible = !pwdVisible">
+                    {{ pwdVisible ? '&#xe63d;' : '&#xe653;' }}
+                  </i>
                 </div>
               </div>
             </div>
             <div class="row-remember">
               <label class="checkbox-wrap">
                 <input type="checkbox" v-model="remember" />
-                <span>记住</span>
+                <span>记住登录状态</span>
               </label>
             </div>
-            <!-- ========= 只保留红色错误提示，无蓝色说明文字 ========= -->
             <div class="msg-line">
               <span v-if="accountError" class="error-text">{{ accountError }}</span>
             </div>
-
             <button class="login-btn" @click="handleLogin">登 录</button>
-            <!-- 【登录按钮下方：注册账号 | 忘记密码】 -->
             <div class="row-link">
               <span class="link-item" @click="goRegister">注册账号</span>
               <span class="split-line">|</span>
@@ -71,8 +65,9 @@
     </div>
   </dv-full-screen-container>
 </template>
+
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { login } from '@/api/auth'
 const router = useRouter()
@@ -81,21 +76,27 @@ const account = ref('')
 const password = ref('')
 const remember = ref(false)
 const pwdVisible = ref(false)
-const emailSuffix = '@kyhorizon.com'
-
 const accountError = ref('')
+const emailSuffix = '@kyhorizon.com'
 const accountReg = /^[a-zA-Z][a-zA-Z0-9_]{5,17}$/
 
-watch(account, (val) => {
-  if (val.includes('@')) {
-    account.value = val.split('@')[0]
+// 读取本地记住账号
+onMounted(() => {
+  const savedAccount = localStorage.getItem('savedAccount')
+  const savedRemember = localStorage.getItem('rememberFlag')
+  if (savedRemember === 'true' && savedAccount) {
+    account.value = savedAccount
+    remember.value = true
   }
+})
+
+// 自动清除@后缀，清空错误提示
+watch(account, (val) => {
+  if (val.includes('@')) account.value = val.split('@')[0]
   accountError.value = ''
 })
 
-const handleAccountBlur = () => {
-  validateAccount()
-}
+// 账号校验
 const validateAccount = () => {
   const val = account.value.trim()
   if (!val) {
@@ -110,45 +111,49 @@ const validateAccount = () => {
   return true
 }
 
+// 登录核心逻辑
 const handleLogin = async () => {
-  if(!validateAccount()) return
+  if (!validateAccount()) return
   const fullEmail = account.value.trim() + emailSuffix
   const pwd = password.value.trim()
-  if(!pwd){
+  if (!pwd) {
     accountError.value = '请输入密码'
     return
   }
   try {
-    const res = await login({
-      username: fullEmail,
-      password: pwd
-    })
-    console.log('登录返回完整res', res)
-    console.log('res.data', res.data)
-    const loginResult = res.data.data
-    localStorage.setItem('token', loginResult.token)
-    localStorage.setItem('username', loginResult.username)
+    const res = await login({ username: fullEmail, password: pwd })
+    if (res.data.code !== 200) {
+      accountError.value = res.data.message || '登录失败'
+      return
+    }
+    // 修复token[object Object]问题，取出字符串
+    const jwtToken = res.data.data.token
+    localStorage.setItem('token', jwtToken)
+    localStorage.setItem('username', fullEmail)
+    if (remember.value) {
+      localStorage.setItem('savedAccount', account.value.trim())
+      localStorage.setItem('rememberFlag', 'true')
+    } else {
+      localStorage.removeItem('savedAccount')
+      localStorage.removeItem('rememberFlag')
+    }
     router.push('/dashboard')
   } catch (err) {
-    accountError.value = err?.message || '账号密码错误'
+    accountError.value = err?.response?.data?.message || err?.message || '请求异常'
   }
 }
 
-
-const goRegister = () => {
-  router.push('/register')
-}
-const goForgetPwd = () => {
-  router.push('/forgetPwd')
-}
+const goRegister = () => router.push('/register')
+const goForgetPwd = () => router.push('/forgetPwd')
 </script>
+
 <style scoped>
 @font-face {
-  font-family: "my-icon";
+  font-family: 'my-icon';
   src: url('@/assets/icon/iconfont.ttf') format('truetype');
 }
 .my-icon {
-  font-family: "my-icon" !important;
+  font-family: 'my-icon' !important;
   font-style: normal;
   -webkit-font-smoothing: antialiased;
 }
@@ -210,13 +215,11 @@ const goForgetPwd = () => {
   font-size: 26px;
   text-align: center;
   margin-bottom: 40px;
-  /* 渐变文字 */
   background: linear-gradient(90deg, #7fc8ff, #ffffff);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   letter-spacing: 4px;
-  /* 发光效果 */
   filter: drop-shadow(0 0 6px #3374cc);
 }
 .input-item {
@@ -224,25 +227,25 @@ const goForgetPwd = () => {
 }
 .input-wrap {
   position: relative;
-  width:100%;
+  width: 100%;
 }
 .input-icon {
   position: absolute;
-  left:16px;
+  left: 16px;
   top: 50%;
   transform: translateY(-50%);
-  font-size:20px;
-  color:#92bfff;
-  z-index:2;
+  font-size: 20px;
+  color: #92bfff;
+  z-index: 2;
 }
 .input-suffix {
   position: absolute;
-  right:16px;
+  right: 16px;
   top: 50%;
   transform: translateY(-50%);
-  font-size:16px;
-  color:#92bfff;
-  z-index:2;
+  font-size: 16px;
+  color: #92bfff;
+  z-index: 2;
   pointer-events: none;
 }
 .pwd-icon-group {
@@ -250,19 +253,19 @@ const goForgetPwd = () => {
   right: 16px;
   top: 50%;
   transform: translateY(-50%);
-  z-index:2;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: 10px;
 }
 .input-clear {
-  font-size:15px;
-  color:#92bfff;
+  font-size: 15px;
+  color: #92bfff;
   cursor: pointer;
 }
 .input-eye {
-  font-size:20px;
-  color:#92bfff;
+  font-size: 20px;
+  color: #92bfff;
   cursor: pointer;
 }
 .input-box {
@@ -278,17 +281,13 @@ const goForgetPwd = () => {
   outline: none;
   transition: border-color 0.2s;
 }
-.account-input{
+.account-input {
   padding-right: 140px;
 }
-.pwd-input{
+.pwd-input {
   padding-right: 70px;
-  -webkit-appearance: none;
 }
-/* 清除浏览器原生密码眼睛 */
-.pwd-input::-ms-reveal {
-  display: none !important;
-}
+.pwd-input::-ms-reveal,
 .pwd-input::-webkit-contacts-auto-fill-button,
 .pwd-input::-webkit-credentials-auto-fill-button {
   visibility: hidden;
@@ -316,15 +315,14 @@ const goForgetPwd = () => {
   cursor: pointer;
 }
 .checkbox-wrap input {
-  margin:0;
+  margin: 0;
   margin-right: 6px;
 }
-/* 错误提示样式 */
 .msg-line {
   margin-bottom: 32px;
-  font-size:12px;
-  line-height:1.4;
-  min-height:18px;
+  font-size: 12px;
+  line-height: 1.4;
+  min-height: 18px;
 }
 .error-text {
   color: #ff7875;
@@ -339,17 +337,26 @@ const goForgetPwd = () => {
   border-radius: 10px;
   box-shadow: 0 0 12px #1580e888;
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+.login-btn:hover {
+  background: linear-gradient(90deg, #094896, #106bc2);
+  box-shadow: 0 0 14px #1580e890;
+}
+.login-btn:active {
+  background: linear-gradient(90deg, #073b7c, #0c57bb);
+  transform: scale(0.98);
 }
 .row-link {
   display: flex;
   justify-content: center;
   align-items: center;
   margin: 16px 0 24px;
-  font-size:14px;
-  gap:12px;
+  font-size: 14px;
+  gap: 12px;
 }
 .split-line {
-  color:#69b8ff;
+  color: #69b8ff;
 }
 .link-item {
   color: #69b8ff;
@@ -358,7 +365,6 @@ const goForgetPwd = () => {
 }
 .link-item:hover {
   color: #ffffff;
-  text-decoration: none;
 }
 .footer-text {
   margin-top: auto;

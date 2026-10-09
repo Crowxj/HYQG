@@ -56,7 +56,6 @@ public class AuthController {
      * 登录账号
      * 前端传 {username:"test", password:"xxx", code:"123456"}
      */
-
     @PostMapping("/login")
     public Result<Object> login(@RequestBody Map<String,Object> map){
         // 拿到前端传的完整邮箱账号

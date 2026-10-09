@@ -17,7 +17,6 @@ public class EmailUtil {
     public static final long CODE_EXPIRE = 10;
     //发件人邮箱
     public static final String MAIL_FROM = "wuxiaojie@kyhorizon.com";
-
     /** 同一邮箱最小发送间隔(秒) */
     public static final long SEND_INTERVAL_SECONDS = 60;
     /** 同一邮箱每日最大发送次数 */
