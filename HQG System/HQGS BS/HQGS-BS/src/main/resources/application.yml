@@ -1,0 +1,56 @@
+server:
+  port: 8081
+  address: 127.0.0.1
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/hyqg?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowMultiQueries=true
+    username: root
+    password: root
+
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      password:
+      database: 0
+
+  servlet:
+    multipart:
+      max-file-size: 1024MB
+      max-request-size: 1024MB
+
+  mail:
+    host: smtp.mxhichina.com
+    port: 465
+    username: wuxiaojie@kyhorizon.com
+    password: EVMeUBbWxzROVjCA
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.kyhorizon.hyqgsbs.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+pagehelper:
+  helper-dialect: mysql
+  reasonable: true
+  support-methods-arguments: true
+
+logging:
+  level:
+    com.kyhorizon.hyqgsbs.mapper: debug
+
+jwt:
+  secret: abcdefghijklmnopabcdefghijklmnopabcdefghijklmnop
+  expiration: 86400000 # 单位毫秒，1天
+
+
