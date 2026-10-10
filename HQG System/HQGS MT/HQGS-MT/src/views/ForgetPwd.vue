@@ -9,85 +9,145 @@
         <dv-border-box-8 class="login-panel">
           <div class="panel-inner">
             <h1 class="system-title">擎工可视化系统</h1>
-            <!-- 装饰组件放到标题下方 -->
-            <dv-decoration-5 style="width:400px;height:40px;" class="title-decoration" />
-            <!-- 找回密码标题 -->
+            <dv-decoration-5 style="width: 400px; height: 40px" class="title-decoration" />
             <div class="tab-text">找回密码</div>
-            <!-- 账号输入框（带用户图标 + 右侧固定邮箱后缀@kyhorizon.com） -->
-            <div class="input-item">
-              <div class="input-wrap">
-                <i class="my-icon input-icon">&#xe63f;</i>
-                <input
-                  class="input-box account-input"
-                  placeholder="请输入账号"
-                  v-model="account"
-                  @focus="showAccountTip = true"
-                  @blur="handleAccountBlur"
-                />
-                <span class="input-suffix">@kyhorizon.com</span>
+            <!-- ========== 三步进度条 ========== -->
+            <div class="step-wrap">
+              <div class="step-item">
+                <div class="step-circle" :class="{ active: step >= 1 }">1</div>
+                <div class="step-label">身份验证</div>
+                <div class="step-desc">邮箱验证</div>
               </div>
-              <!-- 【合并为单行提示】二选一展示，不会两行同时出现 -->
-              <div class="msg-line">
-                <span v-if="accountError" class="error-text">{{ accountError }}</span>
-                <span v-else-if="showAccountTip" class="tip-text">6~18个字符，可使用字母、数字、下划线，需要以字母开头</span>
+              <div class="step-line" :class="{ active: step >= 2 }"></div>
+              <div class="step-item">
+                <div class="step-circle" :class="{ active: step >= 2 }">2</div>
+                <div class="step-label">重置密码</div>
+                <div class="step-desc">重新设置密码</div>
               </div>
-            </div>
-            <!-- 邮箱验证码输入框 -->
-            <div class="input-item">
-              <div class="input-wrap code-wrap">
-                <i class="my-icon input-icon">&#xe699;</i>
-                <input
-                  class="input-box code-input"
-                  placeholder="请输入邮箱验证码"
-                  v-model="code"
-                />
-                <button
-                  class="get-code-btn"
-                  @click="getCode"
-                  :disabled="countDown > 0"
-                >
-                  {{ countDown > 0 ? `${countDown}s后重发` : '获取验证码' }}
-                </button>
+              <div class="step-line" :class="{ active: step >= 3 }"></div>
+              <div class="step-item">
+                <div class="step-circle" :class="{ active: step >= 3 }">3</div>
+                <div class="step-label">找回成功</div>
+                <div class="step-desc">设置成功</div>
               </div>
             </div>
-            <!-- 新密码输入框 -->
-            <div class="input-item">
-              <div class="input-wrap">
-                <i class="my-icon input-icon">&#xe654;</i>
-                <input
-                  class="input-box pwd-input"
-                  placeholder="请输入新密码"
-                  v-model="newPwd"
-                  :type="pwdVisible ? 'text' : 'password'"
-                />
-                <div class="pwd-icon-group">
-                  <i v-if="newPwd" class="my-icon input-clear" @click="newPwd=''">&#xe602;</i>
-                  <i v-if="pwdVisible" class="my-icon input-eye" @click="pwdVisible = !pwdVisible">&#xe63d;</i>
-                  <i v-else class="my-icon input-eye" @click="pwdVisible = !pwdVisible">&#xe653;</i>
+            <!-- ====== 第一步：身份验证 账号+验证码 ====== -->
+            <div v-if="step === 1">
+              <div class="input-item">
+                <div class="input-wrap">
+                  <i class="my-icon input-icon">&#xe63f;</i>
+                  <input
+                    class="input-box account-input"
+                    placeholder="请输入账号"
+                    v-model="account"
+                    @focus="showAccountTip = true"
+                    @blur="handleAccountBlur"
+                  />
+                  <span class="input-suffix">@kyhorizon.com</span>
+                </div>
+                <div class="msg-line">
+                  <span v-if="accountError" class="error-text">{{ accountError }}</span>
+                  <span v-else-if="showAccountTip" class="tip-text"
+                    >3~18个字符，可使用字母、数字、下划线，需要以字母开头</span
+                  >
                 </div>
               </div>
-            </div>
-            <!-- 确认新密码 -->
-            <div class="input-item">
-              <div class="input-wrap">
-                <i class="my-icon input-icon">&#xe654;</i>
-                <input
-                  class="input-box pwd-input"
-                  placeholder="请再次输入新密码"
-                  v-model="confirmPwd"
-                  :type="confirmPwdVisible ? 'text' : 'password'"
-                />
-                <div class="pwd-icon-group">
-                  <i v-if="confirmPwd" class="my-icon input-clear" @click="confirmPwd=''">&#xe602;</i>
-                  <i v-if="confirmPwdVisible" class="my-icon input-eye" @click="confirmPwdVisible = !confirmPwdVisible">&#xe63d;</i>
-                  <i v-else class="my-icon input-eye" @click="confirmPwdVisible = !confirmPwdVisible">&#xe653;</i>
+              <div class="input-item">
+                <div class="input-wrap code-wrap">
+                  <i class="my-icon input-icon">&#xe699;</i>
+                  <input
+                    class="input-box code-input"
+                    placeholder="请输入邮箱验证码"
+                    v-model="code"
+                  />
+                  <button class="get-code-btn" @click="getCode" :disabled="countDown > 0">
+                    {{ countDown > 0 ? `${countDown}s后重发` : '获取验证码' }}
+                  </button>
+                </div>
+                <div class="msg-line">
+                  <span v-if="codeError" class="error-text">{{ codeError }}</span>
                 </div>
               </div>
+              <button class="login-btn" @click="nextStep">下一步</button>
             </div>
-            <button class="login-btn" @click="handleReset">确认重置</button>
-            <!-- 返回登录链接【增加箭头图标，和注册页样式统一】 -->
-            <div class="row-link">
-              <span class="link-item" @click="goLogin">返回登录 <i class="my-icon back-arrow">&#xe61d;</i></span>
+            <!-- ====== 第二步：重置密码 新密码+确认密码 ====== -->
+            <div v-if="step === 2">
+              <div class="input-item">
+                <div class="input-wrap">
+                  <i class="my-icon input-icon">&#xe654;</i>
+                  <input
+                    class="input-box pwd-input"
+                    placeholder="请输入新密码"
+                    v-model="newPwd"
+                    :type="pwdVisible ? 'text' : 'password'"
+                    @input="validatePwd"
+                    @blur="validatePwd"
+                  />
+                  <div class="pwd-icon-group">
+                    <i v-if="newPwd" class="my-icon input-clear" @click="newPwd = ''">&#xe602;</i>
+                    <i v-if="pwdVisible" class="my-icon input-eye" @click="pwdVisible = !pwdVisible"
+                      >&#xe63d;</i
+                    >
+                    <i v-else class="my-icon input-eye" @click="pwdVisible = !pwdVisible"
+                      >&#xe653;</i
+                    >
+                  </div>
+                </div>
+                <div class="msg-line">
+                  <span v-if="pwdError" class="error-text">{{ pwdError }}</span>
+                  <span v-else class="tip-text"
+                    >密码至少8个字符，必须包含字母和数字，不能包含空格及特殊符号；</span
+                  >
+                </div>
+              </div>
+              <div class="input-item">
+                <div class="input-wrap">
+                  <i class="my-icon input-icon">&#xe654;</i>
+                  <input
+                    class="input-box pwd-input"
+                    placeholder="请再次输入新密码"
+                    v-model="confirmPwd"
+                    :type="confirmPwdVisible ? 'text' : 'password'"
+                    @input="validateConfirmPwd"
+                    @blur="validateConfirmPwd"
+                  />
+                  <div class="pwd-icon-group">
+                    <i v-if="confirmPwd" class="my-icon input-clear" @click="confirmPwd = ''"
+                      >&#xe602;</i
+                    >
+                    <i
+                      v-if="confirmPwdVisible"
+                      class="my-icon input-eye"
+                      @click="confirmPwdVisible = !confirmPwdVisible"
+                      >&#xe63d;</i
+                    >
+                    <i
+                      v-else
+                      class="my-icon input-eye"
+                      @click="confirmPwdVisible = !confirmPwdVisible"
+                      >&#xe653;</i
+                    >
+                  </div>
+                </div>
+                <div class="msg-line">
+                  <span v-if="confirmPwdError" class="error-text">{{ confirmPwdError }}</span>
+                </div>
+              </div>
+              <div style="display: flex; gap: 12px">
+                <button class="login-btn back-btn" @click="preStep">上一步</button>
+                <button class="login-btn" @click="handleReset">确认重置</button>
+              </div>
+            </div>
+            <!-- ====== 第三步：找回成功 ====== -->
+            <div v-if="step === 3" class="success-wrap">
+              <div class="success-text">密码重置成功！</div>
+              <button class="login-btn" @click="goLogin">前往登录</button>
+            </div>
+            <!-- 返回登录链接：只在 step=1 身份验证页面显示 -->
+            <div v-if="step === 1" class="row-link">
+              <span class="link-item" @click="goLogin"
+                >返回登录 <i class="my-icon back-arrow">&#xe61d;</i></span
+              >
             </div>
             <div class="footer-text">版权所有 © 2025 KY-Horizon 自动化技术（天津）有限公司</div>
           </div>
@@ -99,7 +159,10 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { sendEmailCode, checkEmailCode, resetPassword } from '@/api/auth'
 const router = useRouter()
+// 步骤 1身份验证 2重置密码 3成功
+const step = ref(1)
 const account = ref('')
 const code = ref('')
 const newPwd = ref('')
@@ -107,25 +170,32 @@ const confirmPwd = ref('')
 const pwdVisible = ref(false)
 const confirmPwdVisible = ref(false)
 const countDown = ref(0)
-const emailSuffix = '@kyhorizon.com'
-// 账号提示、错误信息
 const showAccountTip = ref(false)
 const accountError = ref('')
-// 账号正则：字母开头，6~18位，只能字母数字下划线
-const accountReg = /^[a-zA-Z][a-zA-Z0-9_]{5,17}$/
+const codeError = ref('')
+const pwdError = ref('')
+const confirmPwdError = ref('')
+// 账号正则：字母开头，3~18位，字母数字下划线
+const accountReg = /^[a-zA-Z][a-zA-Z0-9_]{2,17}$/
+// 【和后端保持一致】密码正则：8位以上，字母+数字，无空格
+const pwdReg = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/
+// 监听账号输入，自动截断@
 watch(account, (val) => {
   if (val.includes('@')) {
     account.value = val.split('@')[0]
   }
-  // 输入变化清空错误
   accountError.value = ''
 })
-// 账号失去焦点：隐藏提示文字，执行校验
+// ========== 修改这里：不再自动清空pwdError ==========
+watch([() => account.value, () => code.value, () => newPwd.value, () => confirmPwd.value], () => {
+  codeError.value = ''
+  // pwdError.value = '' 删掉这一行
+  confirmPwdError.value = ''
+})
 const handleAccountBlur = () => {
   showAccountTip.value = false
   validateAccount()
 }
-// 账号校验函数
 const validateAccount = () => {
   const val = account.value.trim()
   if (!val) {
@@ -133,79 +203,143 @@ const validateAccount = () => {
     return false
   }
   if (!accountReg.test(val)) {
-    accountError.value = '账号格式错误：6~18字符，字母开头，仅字母数字下划线'
+    accountError.value = '账号格式错误：3~18字符，字母开头，仅字母数字下划线'
     return false
   }
   accountError.value = ''
   return true
 }
-// 获取验证码
-const getCode = () => {
+// 密码校验
+const validatePwd = () => {
+  const val = newPwd.value.trim()
+  pwdError.value = '' // 放到这里，用户输入密码时才清空错误提示
+  if (!val) {
+    return false
+  }
+  if (!pwdReg.test(val)) {
+    pwdError.value = '密码至少8个字符，必须包含字母和数字，不能包含空格'
+    return false
+  }
+  return true
+}
+// 确认密码校验
+const validateConfirmPwd = () => {
+  const pwd = newPwd.value
+  const confirm = confirmPwd.value
+  confirmPwdError.value = ''
+  if (!confirm) {
+    return false
+  }
+  if (pwd !== confirm) {
+    confirmPwdError.value = '两次输入密码不一致'
+    return false
+  }
+  return true
+}
+// 获取验证码（重置密码，type=resetPwd）
+const getCode = async () => {
   const val = account.value.trim()
   if (!val) {
-    alert('请输入账号')
+    accountError.value = '请输入账号'
     return
   }
   if (!validateAccount()) return
-  const fullEmail = val + emailSuffix
-  console.log('发送重置密码验证码到邮箱：', fullEmail)
-  // 后端接口
-  /*
-  api.sendResetPwdCode({ email: fullEmail }).then(()=>{
-    alert('验证码已发送，请查收邮箱')
-  })
-  */
-  countDown.value = 60
-  const timer = setInterval(() => {
-    countDown.value--
-    if (countDown.value <= 0) clearInterval(timer)
-  }, 1000)
-}
-// 重置密码提交
-const handleReset = () => {
-  const val = account.value.trim()
-  if (!val) {
-    alert('请输入账号')
-    return
+  try {
+    const res = await sendEmailCode({
+      username: val,
+      type: 'resetPwd',
+    })
+    const result = res.data
+    if (result.code === 200) {
+      countDown.value = 60
+      const timer = setInterval(() => {
+        countDown.value--
+        if (countDown.value <= 0) clearInterval(timer)
+      }, 1000)
+    } else {
+      accountError.value = result.message
+    }
+  } catch (err) {
+    let errMsg = err?.message || '发送验证码失败'
+    if (err?.response?.data?.message) {
+      errMsg = err.response.data.message
+    }
+    accountError.value = errMsg
   }
+}
+// 下一步：校验验证码接口，type=resetPwd
+const nextStep = async () => {
   if (!validateAccount()) return
-  if (!code.value) {
-    alert('请输入验证码')
+  if (!code.value.trim()) {
+    codeError.value = '请输入邮箱验证码'
     return
   }
-  if (!newPwd.value) {
-    alert('请输入新密码')
-    return
+  try {
+    const res = await checkEmailCode({
+      username: account.value.trim(),
+      code: code.value,
+      type: 'resetPwd',
+    })
+    const result = res.data
+    if (result.code !== 200) {
+      codeError.value = result.message
+      return
+    }
+    // 校验成功，进入第二步
+    step.value = 2
+  } catch (err) {
+    codeError.value = err?.message || '验证码校验失败'
   }
-  if (newPwd.value !== confirmPwd.value) {
-    alert('两次密码输入不一致')
-    return
-  }
-  const fullEmail = val + emailSuffix
-  console.log('重置密码', fullEmail, newPwd.value, code.value)
-  /*
-  api.resetPassword({
-    email: fullEmail,
-    code: code.value,
-    newPassword: newPwd.value
-  }).then(res=>{
-    alert('密码重置成功，请重新登录')
-    router.push('/login')
-  })
-  */
 }
-// 返回登录页
+// 上一步（第二步→第一步）
+const preStep = () => {
+  step.value = 1
+  newPwd.value = ''
+  confirmPwd.value = ''
+  pwdError.value = ''
+  confirmPwdError.value = ''
+}
+// 提交重置密码
+const handleReset = async () => {
+  const val = account.value.trim()
+  if (!val) return
+  if (!validatePwd()) return
+  if (!validateConfirmPwd()) return
+  try {
+    const res = await resetPassword({
+      username: val,
+      password: newPwd.value,
+      code: code.value,
+    })
+    const result = res.data
+    console.log('reset res', result)
+    if (result.code === 200) {
+      step.value = 3
+    } else {
+      // 后端业务异常，直接赋值错误信息
+      pwdError.value = result.message
+    }
+  } catch (err) {
+    console.error('重置密码err', err)
+    let errMsg = err?.message || '重置密码失败'
+    if (err?.response?.data?.message) {
+      errMsg = err.response.data.message
+    }
+    pwdError.value = errMsg
+  }
+}
 const goLogin = () => {
   router.push('/login')
 }
 </script>
+
 <style scoped>
 @font-face {
-  font-family: "my-icon";
+  font-family: 'my-icon';
   src: url('@/assets/icon/iconfont.ttf') format('truetype');
 }
 .my-icon {
-  font-family: "my-icon" !important;
+  font-family: 'my-icon' !important;
   font-style: normal;
   -webkit-font-smoothing: antialiased;
 }
@@ -263,32 +397,76 @@ const goLogin = () => {
   align-self: center;
   margin-bottom: 24px;
 }
-/* 和登录、注册页面完全一致的渐变发光标题 */
 .tab-text {
   font-size: 26px;
   text-align: center;
-  margin-bottom: 40px;
-  /* 渐变文字 */
+  margin-bottom: 24px;
   background: linear-gradient(90deg, #7fc8ff, #ffffff);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   letter-spacing: 4px;
-  /* 发光效果 */
   filter: drop-shadow(0 0 6px #3374cc);
+}
+/* ========== 步骤进度条样式 ========== */
+.step-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+.step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+.step-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #244477;
+  color: #92bfff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  margin-bottom: 6px;
+  transition: 0.3s;
+}
+.step-circle.active {
+  background: #1580e8;
+  color: #fff;
+  box-shadow: 0 0 8px #1580e888;
+}
+.step-label {
+  font-size: 14px;
+  color: #c0ddff;
+}
+.step-desc {
+  font-size: 12px;
+  color: #88a8d8;
+}
+.step-line {
+  height: 2px;
+  background: #244477;
+  flex: 1;
+  margin: 0 8px;
+}
+.step-line.active {
+  background: #1580e8;
 }
 .input-item {
   margin-bottom: 20px;
 }
 .input-wrap {
   position: relative;
-  width:100%;
+  width: 100%;
 }
-/* ==========单行提示样式========== */
 .msg-line {
-  margin-top:4px;
-  font-size:12px;
-  line-height:1.4;
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.4;
 }
 .tip-text {
   color: #92bfff;
@@ -298,58 +476,56 @@ const goLogin = () => {
 }
 .code-wrap {
   display: flex;
-  gap:10px;
+  gap: 10px;
 }
 .code-input {
-  flex:1;
+  flex: 1;
   padding-right: 10px !important;
 }
 .get-code-btn {
   width: 130px;
-  height:44px;
-  flex-shrink:0;
-  font-size:14px;
+  height: 44px;
+  flex-shrink: 0;
+  font-size: 14px;
   background: linear-gradient(90deg, #0c57bb, #1580e8);
   border: none;
-  color:#fff;
-  border-radius:10px;
-  cursor:pointer;
+  color: #fff;
+  border-radius: 10px;
+  cursor: pointer;
   box-shadow: 0 0 8px #1580e866;
   transition: all 0.2s ease;
 }
-/*悬停渐变加深*/
 .get-code-btn:hover:not(:disabled) {
   background: linear-gradient(90deg, #094896, #106bc2);
   box-shadow: 0 0 10px #1580e880;
 }
-/*点击按下*/
 .get-code-btn:active:not(:disabled) {
   background: linear-gradient(90deg, #073b7c, #0c57bb);
   transform: scale(0.98);
 }
 .get-code-btn:disabled {
-  background:#445880;
-  cursor:not-allowed;
-  box-shadow:none;
-  transform:none;
+  background: #445880;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
 }
 .input-icon {
   position: absolute;
-  left:16px;
+  left: 16px;
   top: 50%;
   transform: translateY(-50%);
-  font-size:20px;
-  color:#92bfff;
-  z-index:2;
+  font-size: 20px;
+  color: #92bfff;
+  z-index: 2;
 }
 .input-suffix {
   position: absolute;
-  right:16px;
+  right: 16px;
   top: 50%;
   transform: translateY(-50%);
-  font-size:16px;
-  color:#92bfff;
-  z-index:2;
+  font-size: 16px;
+  color: #92bfff;
+  z-index: 2;
   pointer-events: none;
 }
 .pwd-icon-group {
@@ -357,19 +533,19 @@ const goLogin = () => {
   right: 16px;
   top: 50%;
   transform: translateY(-50%);
-  z-index:2;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: 10px;
 }
 .input-clear {
-  font-size:15px;
-  color:#92bfff;
+  font-size: 15px;
+  color: #92bfff;
   cursor: pointer;
 }
 .input-eye {
-  font-size:20px;
-  color:#92bfff;
+  font-size: 20px;
+  color: #92bfff;
   cursor: pointer;
 }
 .input-box {
@@ -385,14 +561,13 @@ const goLogin = () => {
   outline: none;
   transition: border-color 0.2s;
 }
-.account-input{
+.account-input {
   padding-right: 140px;
 }
-.pwd-input{
+.pwd-input {
   padding-right: 70px;
   -webkit-appearance: none;
 }
-/* 清除浏览器原生密码眼睛 */
 .pwd-input::-ms-reveal {
   display: none !important;
 }
@@ -422,33 +597,47 @@ const goLogin = () => {
   cursor: pointer;
   transition: all 0.2s ease;
 }
-/* hover渐变 */
+.back-btn {
+  background: #445880;
+}
 .login-btn:hover {
   background: linear-gradient(90deg, #094896, #106bc2);
   box-shadow: 0 0 14px #1580e890;
 }
-/* active按下渐变 */
 .login-btn:active {
   background: linear-gradient(90deg, #073b7c, #0c57bb);
   transform: scale(0.98);
+}
+/* 成功页面 */
+.success-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 30px;
+}
+.success-text {
+  font-size: 24px;
+  color: #fff;
 }
 .row-link {
   display: flex;
   justify-content: center;
   align-items: center;
   margin: 16px 0 24px;
-  font-size:14px;
+  font-size: 14px;
 }
 .link-item {
   color: #69b8ff;
   cursor: pointer;
-  display:flex;
-  align-items:center;
-  gap:4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   transition: color 0.2s;
 }
-.back-arrow{
-  font-size:16px;
+.back-arrow {
+  font-size: 16px;
 }
 .link-item:hover {
   color: #ffffff;

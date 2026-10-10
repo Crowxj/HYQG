@@ -10,4 +10,6 @@ public interface SysAccountMapper {
     int insert(SysAccount sysAccount);
     // 新增：更新账号信息（更新last_login_time）
     int updateById(SysAccount sysAccount);
+    // 重置密码专用，只更新密码
+    int updatePasswordById(@Param("id") Long id, @Param("password") String password);
 }

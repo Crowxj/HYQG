@@ -15,6 +15,13 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(BusinessException.class)
+    public Result<?> handleBusinessException(BusinessException e) {
+        log.warn("业务异常：{}", e.getMessage());
+        // 使用Result自带的 自定义code+msg 的fail重载方法
+        return Result.fail(e.getCode(), e.getMessage());
+    }
+
     // Redis连接失败捕获
     @ExceptionHandler(RedisConnectionFailureException.class)
     public Result<?> handleRedisException(RedisConnectionFailureException e) {
@@ -22,7 +29,7 @@ public class GlobalExceptionHandler {
         return Result.fail("缓存服务连接失败，请联系管理员");
     }
 
-    // ========== 新增：邮件发送异常单独捕获 ==========
+    // ========== 邮件发送异常单独捕获 ==========
     @ExceptionHandler(MailSendException.class)
     public Result<?> handleMailException(MailSendException e) {
         log.error("邮件发送异常", e);
@@ -34,7 +41,7 @@ public class GlobalExceptionHandler {
         return Result.fail("邮件发送失败，请检查邮箱配置或收件地址");
     }
 
-    // 捕获业务抛出的 RuntimeException
+    // 捕获普通RuntimeException（兜底非业务的运行时异常）
     @ExceptionHandler(RuntimeException.class)
     public Result<?> runtimeExceptionHandler(RuntimeException e) {
         log.error("业务运行异常", e);

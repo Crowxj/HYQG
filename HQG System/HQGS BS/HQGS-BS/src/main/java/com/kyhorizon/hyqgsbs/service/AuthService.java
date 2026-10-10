@@ -7,4 +7,6 @@ public interface AuthService {
     boolean checkEmailCode(Map<String, Object> map);
     void register(Map<String, Object> map);
     String login(Map<String, Object> map);
+    // 新增重置密码接口
+    void resetPassword(Map<String, Object> map);
 }

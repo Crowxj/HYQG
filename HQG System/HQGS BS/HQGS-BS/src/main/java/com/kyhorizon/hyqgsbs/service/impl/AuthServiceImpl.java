@@ -1,5 +1,6 @@
 package com.kyhorizon.hyqgsbs.service.impl;
 
+import com.kyhorizon.hyqgsbs.common.exception.BusinessException;
 import com.kyhorizon.hyqgsbs.common.util.CodeUtil;
 import com.kyhorizon.hyqgsbs.common.util.EmailUtil;
 import com.kyhorizon.hyqgsbs.common.util.JwtUtil;
@@ -46,57 +47,82 @@ public class AuthServiceImpl implements AuthService {
 
     private final BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
 
+    //========== 统一账号正则常量，一处定义，多处复用 ==========
+    private static final String USERNAME_PATTERN = "^[a-zA-Z][a-zA-Z0-9_]{2,17}$";
+    private static final String USERNAME_ERR_MSG = "账号格式错误：3~18字符，字母开头，仅字母数字下划线";
+
     /**
-     * 发送邮箱验证码
+     * 发送邮箱验证码，新增 type 参数区分 register / resetPwd
      */
     @Override
     public void sendEmailCode(Map<String, Object> map) {
         String username = (String) map.get("username");
-        if (username == null || username.isBlank()) {
-            throw new RuntimeException("账号不能为空");
+        String type = (String) map.get("type");
+        if (username == null || username.isBlank() || type == null || type.isBlank()) {
+            throw new BusinessException(400, "参数缺失：username、type不能为空");
         }
 
-        // 拼出完整邮箱
+        // ✅【新增】账号格式校验（注册、重置密码获取验证码时就拦截非法账号）
+        if (!username.matches(USERNAME_PATTERN)) {
+            throw new BusinessException(400, USERNAME_ERR_MSG);
+        }
+
         String email = username + EmailUtil.EMAIL_SUFFIX;
-
-        SysAccountWhitelist whitelist = sysAccountWhitelistMapper.selectByUsername(email);
-        if (whitelist == null) {
-            // 不在白名单，抛出异常，前端捕获提示
-            throw new RuntimeException(email + " 不在注册白名单，无法注册");
+        // 【分支逻辑】注册 / 重置密码 前置校验不一样
+        if ("register".equals(type)) {
+            // 注册场景：校验白名单 + 账号不能已存在
+            SysAccountWhitelist whitelist = sysAccountWhitelistMapper.selectByUsername(email);
+            if (whitelist == null) {
+                throw new BusinessException(403, email + " 不在注册白名单，无法注册");
+            }
+            SysAccount existAccount = sysAccountMapper.selectByUsername(email);
+            if (existAccount != null) {
+                throw new BusinessException(409, email + "已经注册，无法获取验证码");
+            }
+        } else if ("resetPwd".equals(type)) {
+            // 重置密码场景：账号必须存在
+            SysAccount existAccount = sysAccountMapper.selectByUsername(email);
+            if (existAccount == null) {
+                throw new BusinessException(404, "该账号不存在，无法发送重置验证码");
+            }
+        } else {
+            throw new BusinessException(400, "type类型错误，仅支持 register / resetPwd");
         }
-        SysAccount existAccount = sysAccountMapper.selectByUsername(email);
-        if (existAccount != null) {
-            throw new RuntimeException(email +"已经注册，无法获取验证码");
-        }
 
+        // 发送频率限流（注册和重置共用同一套冷却计数）
         String limitKey = EmailUtil.REDIS_SEND_LIMIT_PREFIX + email;
         Boolean isCooling = stringRedisTemplate.hasKey(limitKey);
         if (Boolean.TRUE.equals(isCooling)) {
-            throw new RuntimeException("邮件发送过于频繁，请" + EmailUtil.SEND_INTERVAL_SECONDS + "秒后再试");
+            throw new BusinessException(400, "邮件发送过于频繁，请" + EmailUtil.SEND_INTERVAL_SECONDS + "秒后再试");
         }
 
         String dailyKey = EmailUtil.REDIS_SEND_DAILY_PREFIX + email;
         String countStr = stringRedisTemplate.opsForValue().get(dailyKey);
         Long todayCount = countStr == null ? 0L : Long.parseLong(countStr);
-
         if (todayCount >= EmailUtil.DAILY_MAX_SEND) {
-            throw new RuntimeException("今日验证码发送次数已达上限，请明天再试");
+            throw new BusinessException(400, "今日验证码发送次数已达上限，请明天再试");
         }
         todayCount = stringRedisTemplate.opsForValue().increment(dailyKey, 1);
         if (todayCount == 1) {
             stringRedisTemplate.expireAt(dailyKey, getEndOfToday());
         }
 
-        // 生成验证码
+        // 获取对应类型的redis前缀
+        String redisCodePrefix = EmailUtil.getCodeRedisPrefix(type);
         String code = CodeUtil.generateSixDigitCode();
-        String redisKey = EmailUtil.REDIS_CODE_PREFIX + email;
+        String redisKey = redisCodePrefix + email;
         stringRedisTemplate.opsForValue().set(redisKey, code, EmailUtil.CODE_EXPIRE, TimeUnit.MINUTES);
         stringRedisTemplate.opsForValue().set(limitKey, "1", EmailUtil.SEND_INTERVAL_SECONDS, TimeUnit.SECONDS);
 
-        // 发送邮件
+        // 根据type发送不同邮件模板
         try {
-            emailUtil.sendRegisterEmail(email, code);
+            if ("register".equals(type)) {
+                emailUtil.sendRegisterEmail(email, code);
+            } else if ("resetPwd".equals(type)) {
+                emailUtil.sendResetPwdEmail(email, code);
+            }
         } catch (MessagingException e) {
+            // 邮件底层异常，保持原有RuntimeException，交给全局兜底Exception捕获
             throw new RuntimeException("邮件发送异常", e);
         }
     }
@@ -111,17 +137,22 @@ public class AuthServiceImpl implements AuthService {
     }
 
     /**
-     * 校验验证码
+     * 校验验证码，增加type区分
      */
     @Override
     public boolean checkEmailCode(Map<String, Object> map) {
         String username = (String) map.get("username");
         String inputCode = (String) map.get("code");
-        if (username == null || inputCode == null) {
+        String type = (String) map.get("type");
+        if (username == null || inputCode == null || type == null) {
+            return false;
+        }
+        if (!username.matches(USERNAME_PATTERN)) {
             return false;
         }
         String email = username + EmailUtil.EMAIL_SUFFIX;
-        String redisKey = EmailUtil.REDIS_CODE_PREFIX + email;
+        String redisCodePrefix = EmailUtil.getCodeRedisPrefix(type);
+        String redisKey = redisCodePrefix + email;
         String cacheCode = stringRedisTemplate.opsForValue().get(redisKey);
         if (cacheCode == null || !cacheCode.equals(inputCode)) {
             return false;
@@ -139,75 +170,124 @@ public class AuthServiceImpl implements AuthService {
         String password = (String) map.get("password");
         String inputCode = (String) map.get("code");
         if (username == null || password == null || inputCode == null) {
-            throw new RuntimeException("参数缺失");
+            throw new BusinessException(400, "参数缺失");
         }
-        // 拼完整邮箱
+        // ✅【新增】注册提交账号校验
+        if (!username.matches(USERNAME_PATTERN)) {
+            throw new BusinessException(400, USERNAME_ERR_MSG);
+        }
         String email = username + EmailUtil.EMAIL_SUFFIX;
-        String redisKey = EmailUtil.REDIS_CODE_PREFIX + email;
-        //再次校验验证码
+        String redisKey = EmailUtil.REDIS_CODE_REGISTER_PREFIX + email;
         String cacheCode = stringRedisTemplate.opsForValue().get(redisKey);
         if (cacheCode == null || !cacheCode.equals(inputCode)) {
-            throw new RuntimeException("验证码错误或已过期");
+            throw new BusinessException(400, "验证码错误或已过期");
         }
         //密码强度校验
         String pwdPattern = "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}$";
         if (!password.matches(pwdPattern)) {
-            throw new RuntimeException("密码至少8个字符，必须包含字母和数字，不能包含空格");
+            throw new BusinessException(400, "密码至少8个字符，必须包含字母和数字，不能包含空格");
         }
-        // 数据库注册事务方法
         doRegisterDb(email, password);
-
-        //注册成功，清理缓存
+        //注册成功清理缓存
         stringRedisTemplate.delete(redisKey);
         stringRedisTemplate.delete(EmailUtil.REDIS_SEND_LIMIT_PREFIX + email);
         stringRedisTemplate.delete(EmailUtil.REDIS_SEND_DAILY_PREFIX + email);
     }
 
-    /**
-     * 数据库操作事务方法【已新增 account.setAccountType(1)】
-     */
     private void doRegisterDb(String email, String password) {
-        //2.判断账号是否重复（用完整邮箱查）
         SysAccount exist = sysAccountMapper.selectByUsername(email);
         if (exist != null) {
-            throw new RuntimeException("账号已存在");
+            throw new BusinessException(409, "账号已存在");
         }
-
-        //3.密码BCrypt加密
         String encryptPwd = bCryptPasswordEncoder.encode(password);
-
-        //4.插入数据库，存完整邮箱
         SysAccount account = new SysAccount();
         account.setUsername(email);
         account.setPassword(encryptPwd);
         account.setEmpId(null);
         account.setRoleType(1);
         account.setStatus(1);
-        account.setAccountType(1); // 新增：赋值账号类型
+        account.setAccountType(1);
         account.setCreateTime(LocalDateTime.now());
         account.setLastLoginTime(null);
         sysAccountMapper.insert(account);
     }
 
     /**
-     * ✅ 修改登录方法，使用Security AuthenticationManager认证
+     * 【新增】重置密码业务
+     */
+    @Override
+    @Transactional
+    public void resetPassword(Map<String, Object> map) {
+        String username = (String) map.get("username");
+        String newPassword = (String) map.get("password");
+        String inputCode = (String) map.get("code");
+        if (username == null || newPassword == null || inputCode == null) {
+            throw new BusinessException(400, "参数缺失");
+        }
+        // ✅【新增】重置密码提交账号校验
+        if (!username.matches(USERNAME_PATTERN)) {
+            throw new BusinessException(400, USERNAME_ERR_MSG);
+        }
+        String email = username + EmailUtil.EMAIL_SUFFIX;
+        String redisKey = EmailUtil.REDIS_CODE_RESETPWD_PREFIX + email;
+        String cacheCode = stringRedisTemplate.opsForValue().get(redisKey);
+        if (cacheCode == null || !cacheCode.equals(inputCode)) {
+            throw new BusinessException(400, "验证码错误或已过期");
+        }
+        //密码强度校验
+        String pwdPattern = "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}$";
+        if (!newPassword.matches(pwdPattern)) {
+            throw new BusinessException(400, "密码至少8个字符，必须包含字母和数字，不能包含空格");
+        }
+        SysAccount account = sysAccountMapper.selectByUsername(email);
+        if (account == null) {
+            throw new BusinessException(404, "账号不存在");
+        }
+
+        // ========== 新增：校验新密码不能和原有密码一致 ==========
+        boolean isSamePwd = bCryptPasswordEncoder.matches(newPassword, account.getPassword());
+        if (isSamePwd) {
+            throw new BusinessException(409, "新密码不能与原密码相同，请更换密码");
+        }
+
+        //更新密码
+        String encryptPwd = bCryptPasswordEncoder.encode(newPassword);
+        account.setPassword(encryptPwd);
+        sysAccountMapper.updatePasswordById(account.getId(), encryptPwd);
+        //清除重置验证码缓存
+        stringRedisTemplate.delete(redisKey);
+    }
+
+    /**
+     * 登录
      */
     @Override
     public String login(Map<String, Object> map) {
-        String username = (String) map.get("username");
+        String fullEmail = (String) map.get("username");
         String rawPwd = (String) map.get("password");
-        if (username == null || rawPwd == null) {
-            throw new RuntimeException("账号密码不能为空");
+        if (fullEmail == null || rawPwd == null) {
+            throw new BusinessException(400, "账号密码不能为空");
         }
-        //使用Security进行账号密码校验
+        // 剥离邮箱后缀，提取纯账号名称用于正则校验
+        String username = fullEmail.contains("@") ? fullEmail.split("@")[0] : fullEmail;
+        if (!username.matches(USERNAME_PATTERN)) {
+            throw new BusinessException(400, USERNAME_ERR_MSG);
+        }
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(username, rawPwd)
+                new UsernamePasswordAuthenticationToken(fullEmail, rawPwd)
         );
-        //认证成功，更新登录时间
-        SysAccount account = sysAccountMapper.selectByUsername(username);
-        account.setLastLoginTime(LocalDateTime.now());
-        sysAccountMapper.updateById(account);
-        //使用JwtUtil生成token
-        return jwtUtil.generateToken(username);
+        String loginName = authentication.getName();
+        new Thread(() -> {
+            try {
+                SysAccount account = sysAccountMapper.selectByUsername(loginName);
+                if (account != null) {
+                    account.setLastLoginTime(LocalDateTime.now());
+                    sysAccountMapper.updateById(account);
+                }
+            } catch (Exception e) {
+                // 异步更新失败，只打日志，不影响登录
+            }
+        }).start();
+        return jwtUtil.generateToken(fullEmail);
     }
 }

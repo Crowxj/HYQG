@@ -20,4 +20,11 @@
         where id = #{id}
     </update>
 
+    <update id="updatePasswordById">
+        update sys_account
+        set password = #{password}
+        where id = #{id}
+    </update>
+
+
 </mapper>

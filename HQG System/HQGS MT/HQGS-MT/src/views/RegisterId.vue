@@ -34,7 +34,7 @@
                   <div class="msg-line">
                     <span v-if="accountError" class="error-text">{{ accountError }}</span>
                     <span v-else-if="showAccountTip" class="tip-text"
-                      >6~18个字符，可使用字母、数字、下划线，需要以字母开头</span
+                      >3~18个字符，可使用字母、数字、下划线，需要以字母开头</span
                     >
                   </div>
                 </div>
@@ -180,7 +180,6 @@ const registerForm = ref({
 })
 const pwdVisible = ref(false)
 const confirmPwdVisible = ref(false)
-const emailSuffix = '@kyhorizon.com'
 const countDown = ref(0)
 // 账号提示、错误信息（和找回密码页逻辑一致）
 const showAccountTip = ref(false)
@@ -193,8 +192,8 @@ const confirmPwdError = ref('')
 // 底部提示消息
 const msgText = ref('')
 const msgType = ref('error') // error / success
-// 账号正则：字母开头，6~18位，只能字母数字下划线
-const accountReg = /^[a-zA-Z][a-zA-Z0-9_]{5,17}$/
+// =========【修改】账号正则：字母开头，3~18位，只能字母数字下划线 =========
+const accountReg = /^[a-zA-Z][a-zA-Z0-9_]{2,17}$/
 // =========密码正则 8位以上，字母+数字，无空格=========
 const pwdReg = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/
 // 密码实时校验函数
@@ -205,7 +204,7 @@ const validatePwd = () => {
     return false
   }
   if (!pwdReg.test(val)) {
-    pwdError.value = '密码至少8个字符，必须包含字母和数字，不能包含空格'
+    pwdError.value = '密码至少8个字符，必须包含字母和数字，不能包含空格及特殊符号'
     return false
   }
   pwdError.value = ''
@@ -264,7 +263,8 @@ const validateAccount = () => {
     return false
   }
   if (!accountReg.test(val)) {
-    accountError.value = '账号格式错误：6~18字符，字母开头，仅字母数字下划线'
+    // 【修改】错误文案
+    accountError.value = '账号格式错误：3~18字符，字母开头，仅字母数字下划线'
     return false
   }
   accountError.value = ''
@@ -285,8 +285,11 @@ const getCode = async () => {
   // ✅ 点击获取验证码，先清空底部提示文字（解决旧提示残留）
   msgText.value = ''
   try {
-    // axios返回的整体对象，后端业务数据在 .data
-    const res = await sendEmailCode({ username: account })
+    // ========== 修复：增加 type: "register" ==========
+    const res = await sendEmailCode({
+      username: account,
+      type: 'register',
+    })
     const result = res.data
     // result = {code:500, message:"xxx", data:null}
     if (result.code === 200) {
@@ -336,6 +339,7 @@ const handleRegister = async () => {
       const res = await checkEmailCode({
         username: registerForm.value.account.trim(),
         code: registerForm.value.code,
+        type: 'register', // 新增type参数
       })
       // ========= 修复：取出 res.data 业务返回对象，和getCode逻辑统一 =========
       const result = res.data

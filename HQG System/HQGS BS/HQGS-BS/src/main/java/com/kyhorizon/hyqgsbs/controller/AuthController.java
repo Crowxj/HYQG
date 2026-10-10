@@ -20,7 +20,8 @@ public class AuthController {
 
     /**
      * 发送邮箱验证码
-     * 前端传 {username:"test"}
+     * 前端传 {username:"test", type:"register"} 注册
+     * 前端传 {username:"test", type:"resetPwd"} 重置密码
      */
     @PostMapping("/sendEmailCode")
     public Result<Object> sendEmailCode(@RequestBody Map<String,Object> map){
@@ -30,7 +31,7 @@ public class AuthController {
 
     /**
      * 校验邮箱验证码（下一步接口）
-     * 前端传 {username:"test", code:"123456"}
+     * 前端传 {username:"test", code:"123456", type:"register"}
      */
     @PostMapping("/checkEmailCode")
     public Result<Object> checkEmailCode(@RequestBody Map<String,Object> map){
@@ -53,15 +54,22 @@ public class AuthController {
     }
 
     /**
+     * 【新增】重置密码提交接口
+     * 前端找回密码第二步提交：{username:"test", password:"xxx", code:"123456"}
+     */
+    @PostMapping("/resetPassword")
+    public Result<Object> resetPassword(@RequestBody Map<String,Object> map){
+        authService.resetPassword(map);
+        return Result.successMsg("密码重置成功");
+    }
+
+    /**
      * 登录账号
-     * 前端传 {username:"test", password:"xxx", code:"123456"}
      */
     @PostMapping("/login")
     public Result<Object> login(@RequestBody Map<String,Object> map){
-        // 拿到前端传的完整邮箱账号
         String loginUsername = (String) map.get("username");
         String token = authService.login(map);
-        // 返回map，同时携带token和username
         Map<String,Object> resultMap = new HashMap<>();
         resultMap.put("token", token);
         resultMap.put("username", loginUsername);

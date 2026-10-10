@@ -141,4 +141,11 @@ public class Result<T> {
     public static <T> Result<T> notFound(String message) {
         return new Result<>(404, message, null);
     }
+
+    /**
+     * 自定义返回结果，code + message + data
+     */
+    public static <T> Result<T> build(Integer code, String message, T data) {
+        return new Result<>(code, message, data);
+    }
 }

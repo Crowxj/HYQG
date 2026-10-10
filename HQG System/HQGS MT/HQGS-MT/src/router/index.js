@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 // 引入页面
-import Login from '@/views/Login.vue'
-import Register from '@/views/Register.vue'
+import Login from '@/views/LoginSys.vue'
+import Register from '@/views/RegisterId.vue'
 import ForgetPwd from '@/views/ForgetPwd.vue'
 // 新增仪表盘页面
 import Dashboard from '@/views/Dashboard.vue'
@@ -11,29 +11,29 @@ const router = createRouter({
     {
       path: '/login',
       name: 'Login',
-      component: Login
+      component: Login,
     },
     {
       path: '/register',
       name: 'Register',
-      component: Register
+      component: Register,
     },
     {
       path: '/forgetPwd',
       name: 'ForgetPwd',
-      component: ForgetPwd
+      component: ForgetPwd,
     },
     // 仪表盘路由
     {
       path: '/dashboard',
       name: 'Dashboard',
-      component: Dashboard
+      component: Dashboard,
     },
     // 根路径跳转登录
     {
       path: '/',
-      redirect: '/login'
-    }
+      redirect: '/login',
+    },
   ],
 })
 // 全局路由守卫：修复后退bug

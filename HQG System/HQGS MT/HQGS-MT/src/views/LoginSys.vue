@@ -78,7 +78,7 @@ const remember = ref(false)
 const pwdVisible = ref(false)
 const accountError = ref('')
 const emailSuffix = '@kyhorizon.com'
-const accountReg = /^[a-zA-Z][a-zA-Z0-9_]{5,17}$/
+const accountReg = /^[a-zA-Z][a-zA-Z0-9_]{2,17}$/
 
 // 读取本地记住账号
 onMounted(() => {
@@ -104,7 +104,7 @@ const validateAccount = () => {
     return false
   }
   if (!accountReg.test(val)) {
-    accountError.value = '账号格式错误：6~18字符，字母开头，仅字母数字下划线'
+    accountError.value = '账号格式错误：3~18字符，字母开头，仅字母数字下划线'
     return false
   }
   accountError.value = ''
