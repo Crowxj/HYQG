@@ -24,7 +24,7 @@ public class EmailUtil {
     /** 同一邮箱最小发送间隔(秒) */
     public static final long SEND_INTERVAL_SECONDS = 60;
     /** 同一邮箱每日最大发送次数 */
-    public static final int DAILY_MAX_SEND = 20;
+    public static final int DAILY_MAX_SEND = 3;
     /** 冷却redis key前缀 */
     public static final String REDIS_SEND_LIMIT_PREFIX = "register:send:limit:";
     /** 每日计数redis key前缀 */

@@ -140,7 +140,7 @@
             </div>
             <!-- ====== 第三步：找回成功 ====== -->
             <div v-if="step === 3" class="success-wrap">
-              <div class="success-text">密码重置成功！</div>
+              <div class="success-row-text">密码重置成功！{{ countNum }}s后跳转到登录界面</div>
               <button class="login-btn" @click="goLogin">前往登录</button>
             </div>
             <!-- 返回登录链接：只在 step=1 身份验证页面显示 -->
@@ -157,7 +157,7 @@
   </dv-full-screen-container>
 </template>
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { sendEmailCode, checkEmailCode, resetPassword } from '@/api/auth'
 const router = useRouter()
@@ -175,9 +175,10 @@ const accountError = ref('')
 const codeError = ref('')
 const pwdError = ref('')
 const confirmPwdError = ref('')
-// 账号正则：字母开头，3~18位，字母数字下划线
+// 倒计时变量
+const countNum = ref(3)
+let timer = null
 const accountReg = /^[a-zA-Z][a-zA-Z0-9_]{2,17}$/
-// 【和后端保持一致】密码正则：8位以上，字母+数字，无空格
 const pwdReg = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/
 // 监听账号输入，自动截断@
 watch(account, (val) => {
@@ -186,10 +187,8 @@ watch(account, (val) => {
   }
   accountError.value = ''
 })
-// ========== 修改这里：不再自动清空pwdError ==========
 watch([() => account.value, () => code.value, () => newPwd.value, () => confirmPwd.value], () => {
   codeError.value = ''
-  // pwdError.value = '' 删掉这一行
   confirmPwdError.value = ''
 })
 const handleAccountBlur = () => {
@@ -212,7 +211,7 @@ const validateAccount = () => {
 // 密码校验
 const validatePwd = () => {
   const val = newPwd.value.trim()
-  pwdError.value = '' // 放到这里，用户输入密码时才清空错误提示
+  pwdError.value = ''
   if (!val) {
     return false
   }
@@ -267,7 +266,6 @@ const getCode = async () => {
     accountError.value = errMsg
   }
 }
-// 下一步：校验验证码接口，type=resetPwd
 const nextStep = async () => {
   if (!validateAccount()) return
   if (!code.value.trim()) {
@@ -291,7 +289,6 @@ const nextStep = async () => {
     codeError.value = err?.message || '验证码校验失败'
   }
 }
-// 上一步（第二步→第一步）
 const preStep = () => {
   step.value = 1
   newPwd.value = ''
@@ -315,8 +312,15 @@ const handleReset = async () => {
     console.log('reset res', result)
     if (result.code === 200) {
       step.value = 3
+      countNum.value = 3
+      timer = setInterval(() => {
+        countNum.value--
+        if (countNum.value <= 0) {
+          clearInterval(timer)
+          goLogin()
+        }
+      }, 1000)
     } else {
-      // 后端业务异常，直接赋值错误信息
       pwdError.value = result.message
     }
   } catch (err) {
@@ -329,10 +333,15 @@ const handleReset = async () => {
   }
 }
 const goLogin = () => {
+  // 跳转前清除定时器，防止继续执行
+  if (timer) clearInterval(timer)
   router.push('/login')
 }
+// 组件销毁清除定时器，防止内存泄漏
+onUnmounted(() => {
+  if (timer) clearInterval(timer)
+})
 </script>
-
 <style scoped>
 @font-face {
   font-family: 'my-icon';
@@ -408,7 +417,6 @@ const goLogin = () => {
   letter-spacing: 4px;
   filter: drop-shadow(0 0 6px #3374cc);
 }
-/* ========== 步骤进度条样式 ========== */
 .step-wrap {
   display: flex;
   align-items: center;
@@ -617,9 +625,10 @@ const goLogin = () => {
   justify-content: center;
   gap: 30px;
 }
-.success-text {
-  font-size: 24px;
-  color: #fff;
+/* 修改字号为14px，和注册成功提示统一 */
+.success-row-text {
+  font-size: 14px;
+  color: #4cd284;
 }
 .row-link {
   display: flex;

@@ -165,7 +165,7 @@
   </dv-full-screen-container>
 </template>
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { sendEmailCode, checkEmailCode, register } from '@/api/auth' // 导入接口
 const router = useRouter()
@@ -181,20 +181,19 @@ const registerForm = ref({
 const pwdVisible = ref(false)
 const confirmPwdVisible = ref(false)
 const countDown = ref(0)
-// 账号提示、错误信息（和找回密码页逻辑一致）
 const showAccountTip = ref(false)
 const accountError = ref('')
-// ========= 新增验证码错误变量 =========
 const codeError = ref('')
-// ====== 新增密码、确认密码错误变量 ======
 const pwdError = ref('')
 const confirmPwdError = ref('')
 // 底部提示消息
 const msgText = ref('')
 const msgType = ref('error') // error / success
-// =========【修改】账号正则：字母开头，3~18位，只能字母数字下划线 =========
+// 注册成功倒计时
+const countNum = ref(3)
+let timer = null
+
 const accountReg = /^[a-zA-Z][a-zA-Z0-9_]{2,17}$/
-// =========密码正则 8位以上，字母+数字，无空格=========
 const pwdReg = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/
 // 密码实时校验函数
 const validatePwd = () => {
@@ -359,7 +358,6 @@ const handleRegister = async () => {
   }
   // 第二步：提交密码完成注册
   else if (step.value === 2) {
-    // 点击注册兜底校验（复用函数）
     if (!validatePwd()) return
     if (!validateConfirmPwd()) return
     try {
@@ -370,10 +368,19 @@ const handleRegister = async () => {
       })
       const result = res.data
       if (result.code === 200) {
-        showMsg('注册成功！即将跳转登录页', 'success')
-        setTimeout(() => {
-          router.push('/login')
-        }, 1200)
+        // 注册成功，开启3s倒计时，绿色提示
+        countNum.value = 3
+        msgType.value = 'success'
+        timer = setInterval(() => {
+          msgText.value = `注册成功！${countNum.value}s后跳转到登录界面`
+          countNum.value--
+          if (countNum.value <= 0) {
+            clearInterval(timer)
+            goLogin()
+          }
+        }, 1000)
+      } else {
+        showMsg(result.message)
       }
     } catch (err) {
       showMsg(err?.message || '注册失败')
@@ -382,8 +389,13 @@ const handleRegister = async () => {
 }
 // 返回登录页
 const goLogin = () => {
+  if (timer) clearInterval(timer)
   router.push('/login')
 }
+// 组件销毁清除定时器，防止内存泄漏
+onUnmounted(() => {
+  if (timer) clearInterval(timer)
+})
 </script>
 <style scoped>
 @font-face {
