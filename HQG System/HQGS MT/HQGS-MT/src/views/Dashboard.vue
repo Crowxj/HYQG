@@ -33,7 +33,7 @@ const handleLogout = () => {
   if (confirm('确定退出登录吗？')) {
     localStorage.removeItem('token')
     localStorage.removeItem('username')
-    router.push('/login')
+    router.push('/dashboard/login')
   }
 }
 </script>

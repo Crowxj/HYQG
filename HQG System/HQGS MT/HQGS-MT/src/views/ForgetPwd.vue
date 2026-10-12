@@ -335,7 +335,7 @@ const handleReset = async () => {
 const goLogin = () => {
   // 跳转前清除定时器，防止继续执行
   if (timer) clearInterval(timer)
-  router.push('/login')
+  router.push('/dashboard/login')
 }
 // 组件销毁清除定时器，防止内存泄漏
 onUnmounted(() => {

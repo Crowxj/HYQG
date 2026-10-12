@@ -1,8 +1,10 @@
 package com.kyhorizon.hyqgsbs.config;
 
 import com.kyhorizon.hyqgsbs.entity.SysAccount;
+import com.kyhorizon.hyqgsbs.entity.SysAccountSystem;
 import com.kyhorizon.hyqgsbs.filter.JwtAuthenticationFilter;
 import com.kyhorizon.hyqgsbs.mapper.SysAccountMapper;
+import com.kyhorizon.hyqgsbs.mapper.SysAccountSystemMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,17 +30,18 @@ import com.kyhorizon.hyqgsbs.common.util.JwtUtil;
 public class SecurityConfig {
 
     private final SysAccountMapper sysAccountMapper;
-    private final JwtUtil jwtUtil; //注入JwtUtil
+    // 新增注入系统账号mapper
+    private final SysAccountSystemMapper sysAccountSystemMapper;
+    private final JwtUtil jwtUtil;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
-        // ✅ 手动new Jwt过滤器，不再从容器注入，打破循环依赖
         JwtAuthenticationFilter jwtAuthFilter = new JwtAuthenticationFilter(jwtUtil, userDetailsService());
 
         http.csrf(csrf->csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/dashboard/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
@@ -58,17 +61,31 @@ public class SecurityConfig {
     @Bean
     public UserDetailsService userDetailsService() {
         return username -> {
-            SysAccount account = sysAccountMapper.selectByUsername(username);
-            if(account == null){
-                throw new UsernameNotFoundException("账号不存在");
+            // 第一步：查询普通账号表 sys_account
+            SysAccount normalAccount = sysAccountMapper.selectByUsername(username);
+            if(normalAccount != null){
+                // 普通账号需要校验status状态
+                if(normalAccount.getStatus() != 1){
+                    throw new LockedException("账号已被禁用");
+                }
+                return User.withUsername(normalAccount.getUsername())
+                        .password(normalAccount.getPassword())
+                        .roles("USER")
+                        .build();
             }
-            if(account.getStatus() != 1){
-                throw new LockedException("账号已被禁用");
+
+            // 第二步：普通账号不存在，查询系统内置账号 sys_account_system
+            SysAccountSystem sysAccount = sysAccountSystemMapper.selectByUsername(username);
+            if(sysAccount != null){
+                // 系统账号没有status字段，直接返回
+                return User.withUsername(sysAccount.getUsername())
+                        .password(sysAccount.getPassword())
+                        .roles("ADMIN") // 系统账号给ADMIN角色，可自行调整
+                        .build();
             }
-            return User.withUsername(account.getUsername())
-                    .password(account.getPassword())
-                    .roles("USER")
-                    .build();
+
+            // 两张表都查不到，抛出账号不存在
+            throw new UsernameNotFoundException("账号不存在");
         };
     }
 }

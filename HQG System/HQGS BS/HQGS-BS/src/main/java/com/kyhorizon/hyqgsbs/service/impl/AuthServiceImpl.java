@@ -5,8 +5,10 @@ import com.kyhorizon.hyqgsbs.common.util.CodeUtil;
 import com.kyhorizon.hyqgsbs.common.util.EmailUtil;
 import com.kyhorizon.hyqgsbs.common.util.JwtUtil;
 import com.kyhorizon.hyqgsbs.entity.SysAccount;
+import com.kyhorizon.hyqgsbs.entity.SysAccountSystem;
 import com.kyhorizon.hyqgsbs.entity.SysAccountWhitelist;
 import com.kyhorizon.hyqgsbs.mapper.SysAccountMapper;
+import com.kyhorizon.hyqgsbs.mapper.SysAccountSystemMapper;
 import com.kyhorizon.hyqgsbs.mapper.SysAccountWhitelistMapper;
 import com.kyhorizon.hyqgsbs.service.AuthService;
 import jakarta.mail.MessagingException;
@@ -40,6 +42,9 @@ public class AuthServiceImpl implements AuthService {
     private SysAccountMapper sysAccountMapper;
 
     @Autowired
+    private SysAccountSystemMapper sysAccountSystemMapper;
+
+    @Autowired
     private SysAccountWhitelistMapper sysAccountWhitelistMapper;
 
     @Autowired
@@ -47,7 +52,6 @@ public class AuthServiceImpl implements AuthService {
 
     private final BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
 
-    //========== 统一账号正则常量，一处定义，多处复用 ==========
     private static final String USERNAME_PATTERN = "^[a-zA-Z][a-zA-Z0-9_]{2,17}$";
     private static final String USERNAME_ERR_MSG = "账号格式错误：3~18字符，字母开头，仅字母数字下划线";
 
@@ -79,11 +83,16 @@ public class AuthServiceImpl implements AuthService {
             if (existAccount != null) {
                 throw new BusinessException(409, email + "已经注册，无法获取验证码");
             }
+            // 注册时同时校验系统账号表，防止用户名冲突
+            SysAccountSystem existSysAccount = sysAccountSystemMapper.selectByUsername(email);
+            if(existSysAccount != null){
+                throw new BusinessException(409, email + "账号已存在，无法注册");
+            }
         } else if ("resetPwd".equals(type)) {
-            // 重置密码场景：账号必须存在
+            // 重置密码场景：只允许普通注册账号重置，系统内置账号不开放重置密码
             SysAccount existAccount = sysAccountMapper.selectByUsername(email);
             if (existAccount == null) {
-                throw new BusinessException(404, "该账号不存在，无法发送重置验证码");
+                throw new BusinessException(404, "账号名称错误，无法发送重置验证码");
             }
         } else {
             throw new BusinessException(400, "type类型错误，仅支持 register / resetPwd");
@@ -199,12 +208,17 @@ public class AuthServiceImpl implements AuthService {
         if (exist != null) {
             throw new BusinessException(409, "账号已存在");
         }
+        // 注册前二次校验系统账号表，防止重名
+        SysAccountSystem existSys = sysAccountSystemMapper.selectByUsername(email);
+        if(existSys != null){
+            throw new BusinessException(409, "账号已存在");
+        }
         String encryptPwd = bCryptPasswordEncoder.encode(password);
         SysAccount account = new SysAccount();
         account.setUsername(email);
         account.setPassword(encryptPwd);
         account.setEmpId(null);
-        account.setRoleType(1);
+        account.setRoleType(0);
         account.setStatus(1);
         account.setAccountType(1);
         account.setCreateTime(LocalDateTime.now());
@@ -259,7 +273,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     /**
-     * 登录
+     * 登录【核心修改】支持两张表账号登录
      */
     @Override
     public String login(Map<String, Object> map) {
@@ -273,21 +287,33 @@ public class AuthServiceImpl implements AuthService {
         if (!username.matches(USERNAME_PATTERN)) {
             throw new BusinessException(400, USERNAME_ERR_MSG);
         }
+
+        // 1. 先执行SpringSecurity认证
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(fullEmail, rawPwd)
         );
         String loginName = authentication.getName();
+
+        // 2. 异步更新登录时间：优先查sys_account，没有则查sys_account_system
         new Thread(() -> {
             try {
-                SysAccount account = sysAccountMapper.selectByUsername(loginName);
-                if (account != null) {
-                    account.setLastLoginTime(LocalDateTime.now());
-                    sysAccountMapper.updateById(account);
+                SysAccount normalAccount = sysAccountMapper.selectByUsername(loginName);
+                if (normalAccount != null) {
+                    normalAccount.setLastLoginTime(LocalDateTime.now());
+                    sysAccountMapper.updateById(normalAccount);
+                } else {
+                    SysAccountSystem sysAccount = sysAccountSystemMapper.selectByUsername(loginName);
+                    if (sysAccount != null) {
+                        sysAccount.setLastLoginTime(LocalDateTime.now());
+                        sysAccountSystemMapper.updateById(sysAccount);
+                    }
                 }
             } catch (Exception e) {
                 // 异步更新失败，只打日志，不影响登录
+                e.printStackTrace();
             }
         }).start();
+
         return jwtUtil.generateToken(fullEmail);
     }
 }

@@ -143,8 +143,8 @@ const handleLogin = async () => {
   }
 }
 
-const goRegister = () => router.push('/register')
-const goForgetPwd = () => router.push('/forgetPwd')
+const goRegister = () => router.push('/dashboard/register')
+const goForgetPwd = () => router.push('/dashboard/forgetPwd')
 </script>
 
 <style scoped>

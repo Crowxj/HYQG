@@ -390,7 +390,7 @@ const handleRegister = async () => {
 // 返回登录页
 const goLogin = () => {
   if (timer) clearInterval(timer)
-  router.push('/login')
+  router.push('/dashboard/login')
 }
 // 组件销毁清除定时器，防止内存泄漏
 onUnmounted(() => {
@@ -672,7 +672,6 @@ onUnmounted(() => {
   color: #93bfff;
   font-size: 12px;
 }
-/* 按钮上方提示文字 */
 .msg-bottom {
   text-align: center;
   font-size: 14px;

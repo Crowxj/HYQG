@@ -3,7 +3,7 @@ import request from '@/utils/request'
 // 获取验证码
 export function sendEmailCode(data) {
   return request({
-    url: '/api/auth/sendEmailCode',
+    url: '/api/dashboard/sendEmailCode',
     method: 'post',
     data,
   })
@@ -12,7 +12,7 @@ export function sendEmailCode(data) {
 //校验验证码
 export function checkEmailCode(data) {
   return request({
-    url: '/api/auth/checkEmailCode',
+    url: '/api/dashboard/checkEmailCode',
     method: 'post',
     data,
   })
@@ -21,7 +21,7 @@ export function checkEmailCode(data) {
 //注册
 export function register(data) {
   return request({
-    url: '/api/auth/register',
+    url: '/api/dashboard/register',
     method: 'post',
     data,
   })
@@ -30,7 +30,7 @@ export function register(data) {
 // 登录
 export function login(data) {
   return request({
-    url: '/api/auth/login',
+    url: '/api/dashboard/login',
     method: 'post',
     data,
   })
@@ -39,7 +39,7 @@ export function login(data) {
 // 重置密码
 export function resetPassword(data) {
   return request({
-    url: '/api/auth/resetPassword',
+    url: '/api/dashboard/resetPassword',
     method: 'post',
     data,
   })

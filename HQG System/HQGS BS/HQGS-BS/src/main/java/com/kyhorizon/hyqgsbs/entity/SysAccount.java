@@ -3,6 +3,9 @@ package com.kyhorizon.hyqgsbs.entity;
 import lombok.Data;
 import java.time.LocalDateTime;
 
+/**
+ * 系统注册账号表
+ */
 @Data
 public class SysAccount {
     private Long id;
