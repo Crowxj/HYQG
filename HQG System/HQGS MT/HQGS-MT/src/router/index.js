@@ -3,13 +3,13 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Login from '@/views/LoginSys.vue'
 import Register from '@/views/RegisterId.vue'
 import ForgetPwd from '@/views/ForgetPwd.vue'
-// 新增仪表盘页面
 import Dashboard from '@/views/Dashboard.vue'
+// 引入大屏
+import ScreenView from '@/views/screen/ScreenView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    // =========管理端父路由 前缀 /dashboard =========
     {
       path: '/dashboard',
       children: [
@@ -29,17 +29,17 @@ const router = createRouter({
           component: ForgetPwd,
         },
         {
-          path: '',
+          path: 'dashboard',
           name: 'Dashboard',
           component: Dashboard,
         },
       ],
     },
-    // =========大屏预留路由，页面后续再补 =========
+    // =========大屏路由 =========
     {
       path: '/display',
       name: 'ScreenDisplay',
-      // component: ScreenDisplay 后续写好大屏页面再解开注释
+      component: ScreenView,
     },
     // 根路径直接跳转到登录页
     {
@@ -63,7 +63,6 @@ router.beforeEach((to, from, next) => {
       return next('/dashboard/login')
     }
   }
-  // 其他页面正常放行
   next()
 })
 

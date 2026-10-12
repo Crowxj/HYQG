@@ -1,77 +1,82 @@
 <template>
-  <dv-full-screen-container fit="fill">
-    <div class="login-container">
-      <div class="logo-box">
-        <img src="@/assets/images/login_logo.webp" alt="浩研汇成LOGO" />
-      </div>
-      <div class="box-wrap">
-        <dv-border-box-8 class="login-panel">
-          <div class="panel-inner">
-            <h1 class="system-title">擎工可视化系统</h1>
-            <dv-decoration-5 style="width: 400px; height: 40px" class="title-decoration" />
-            <div class="tab-text">账号登录</div>
-            <!--账号输入-->
-            <div class="input-item">
-              <div class="input-wrap">
-                <i class="my-icon input-icon">&#xe63f;</i>
-                <input
-                  class="input-box account-input"
-                  placeholder="请输入账号"
-                  v-model="account"
-                  @blur="validateAccount"
-                  @keyup.enter="handleLogin"
-                />
-                <span class="input-suffix">@kyhorizon.com</span>
-              </div>
-            </div>
-            <!--密码输入-->
-            <div class="input-item">
-              <div class="input-wrap">
-                <i class="my-icon input-icon">&#xe654;</i>
-                <input
-                  class="input-box pwd-input"
-                  placeholder="请输入密码"
-                  v-model="password"
-                  :type="pwdVisible ? 'text' : 'password'"
-                  @keyup.enter="handleLogin"
-                />
-                <div class="pwd-icon-group">
-                  <i v-if="password" class="my-icon input-clear" @click="password = ''">&#xe602;</i>
-                  <i class="my-icon input-eye" @click="pwdVisible = !pwdVisible">
-                    {{ pwdVisible ? '&#xe63d;' : '&#xe653;' }}
-                  </i>
-                </div>
-              </div>
-            </div>
-            <div class="row-remember">
-              <label class="checkbox-wrap">
-                <input type="checkbox" v-model="remember" />
-                <span>记住登录状态</span>
-              </label>
-            </div>
-            <div class="msg-line">
-              <span v-if="accountError" class="error-text">{{ accountError }}</span>
-            </div>
-            <button class="login-btn" @click="handleLogin">登 录</button>
-            <div class="row-link">
-              <span class="link-item" @click="goRegister">注册账号</span>
-              <span class="split-line">|</span>
-              <span class="link-item" @click="goForgetPwd">忘记密码</span>
-            </div>
-            <div class="footer-text">版权所有 © 2025 KY-Horizon 自动化技术（天津）有限公司</div>
-          </div>
-        </dv-border-box-8>
-      </div>
+  <div class="login-container">
+    <!-- 底层星空背景 -->
+    <div class="bg-image"></div>
+    <!-- 中间层：抽离出来的数字雨组件 -->
+    <BgMatrixRain />
+
+    <div class="logo-box">
+      <img src="@/assets/images/login_logo.webp" alt="浩研汇成LOGO" />
     </div>
-  </dv-full-screen-container>
+    <div class="box-wrap">
+      <dv-border-box-8 class="login-panel">
+        <div class="panel-inner">
+          <h1 class="system-title">擎工可视化系统</h1>
+          <dv-decoration-5 style="width: 400px; height: 40px" class="title-decoration" />
+          <div class="tab-text">账号登录</div>
+          <!--账号输入-->
+          <div class="input-item">
+            <div class="input-wrap">
+              <i class="my-icon input-icon">&#xe63f;</i>
+              <input
+                class="input-box account-input"
+                placeholder="请输入账号"
+                v-model="account"
+                @blur="validateAccount"
+                @keyup.enter="handleLogin"
+              />
+              <span class="input-suffix">@kyhorizon.com</span>
+            </div>
+          </div>
+          <!--密码输入-->
+          <div class="input-item">
+            <div class="input-wrap">
+              <i class="my-icon input-icon">&#xe654;</i>
+              <input
+                class="input-box pwd-input"
+                placeholder="请输入密码"
+                v-model="password"
+                :type="pwdVisible ? 'text' : 'password'"
+                @keyup.enter="handleLogin"
+              />
+              <div class="pwd-icon-group">
+                <i v-if="password" class="my-icon input-clear" @click="password = ''">&#xe602;</i>
+                <i class="my-icon input-eye" @click="pwdVisible = !pwdVisible">
+                  {{ pwdVisible ? '&#xe63d;' : '&#xe653;' }}
+                </i>
+              </div>
+            </div>
+          </div>
+          <div class="row-remember">
+            <label class="checkbox-wrap">
+              <input type="checkbox" v-model="remember" />
+              <span>记住登录状态</span>
+            </label>
+          </div>
+          <div class="msg-line">
+            <span v-if="accountError" class="error-text">{{ accountError }}</span>
+          </div>
+          <button class="login-btn" @click="handleLogin">登 录</button>
+          <div class="row-link">
+            <span class="link-item" @click="goRegister">注册账号</span>
+            <span class="split-line">|</span>
+            <span class="link-item" @click="goForgetPwd">忘记密码</span>
+          </div>
+          <div class="footer-text">版权所有 © 2025 KY‑Horizon 自动化技术（天津）有限公司</div>
+        </div>
+      </dv-border-box-8>
+    </div>
+  </div>
 </template>
 
 <script setup>
 import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { login } from '@/api/auth'
-const router = useRouter()
+// 引入抽离的数字雨组件
+import BgMatrixRain from '@/components/BgMatrixRain.vue'
 
+const router = useRouter()
 const account = ref('')
 const password = ref('')
 const remember = ref(false)
@@ -142,7 +147,6 @@ const handleLogin = async () => {
     accountError.value = err?.response?.data?.message || err?.message || '请求异常'
   }
 }
-
 const goRegister = () => router.push('/dashboard/register')
 const goForgetPwd = () => router.push('/dashboard/forgetPwd')
 </script>
@@ -159,17 +163,25 @@ const goForgetPwd = () => router.push('/dashboard/forgetPwd')
 }
 .login-container {
   width: 100%;
-  height: 100%;
-  background: url('@/assets/images/login-bg.webp') no-repeat center center;
-  background-size: cover;
+  height: 100vh;
   display: flex;
-  align-items: flex-start;
-  justify-content: flex-end;
-  padding-right: 10%;
-  padding-top: 8%;
+  align-items: center;
+  justify-content: center;
   box-sizing: border-box;
   position: relative;
+  overflow: hidden;
 }
+/*最底层：星空背景图片*/
+.bg-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: url('@/assets/images/screen_bg.webp') no-repeat center center;
+  background-size: cover;
+  z-index: 0;
+}
+
 .logo-box {
   position: absolute;
   top: 24px;
@@ -183,6 +195,8 @@ const goForgetPwd = () => router.push('/dashboard/forgetPwd')
   filter: drop-shadow(0 0 6px rgba(80, 180, 255, 0.4));
 }
 .box-wrap {
+  position: relative;
+  z-index: 10;
   width: 520px;
   height: 680px;
   border-radius: 12px;

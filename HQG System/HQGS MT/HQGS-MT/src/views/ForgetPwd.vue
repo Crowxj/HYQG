@@ -1,165 +1,167 @@
 <template>
-  <dv-full-screen-container fit="fill">
-    <div class="login-container">
-      <!-- 左上角Logo -->
-      <div class="logo-box">
-        <img src="@/assets/images/login_logo.webp" alt="浩研汇成LOGO" />
-      </div>
-      <div class="box-wrap">
-        <dv-border-box-8 class="login-panel">
-          <div class="panel-inner">
-            <h1 class="system-title">擎工可视化系统</h1>
-            <dv-decoration-5 style="width: 400px; height: 40px" class="title-decoration" />
-            <div class="tab-text">找回密码</div>
-            <!-- ========== 三步进度条 ========== -->
-            <div class="step-wrap">
-              <div class="step-item">
-                <div class="step-circle" :class="{ active: step >= 1 }">1</div>
-                <div class="step-label">身份验证</div>
-                <div class="step-desc">邮箱验证</div>
-              </div>
-              <div class="step-line" :class="{ active: step >= 2 }"></div>
-              <div class="step-item">
-                <div class="step-circle" :class="{ active: step >= 2 }">2</div>
-                <div class="step-label">重置密码</div>
-                <div class="step-desc">重新设置密码</div>
-              </div>
-              <div class="step-line" :class="{ active: step >= 3 }"></div>
-              <div class="step-item">
-                <div class="step-circle" :class="{ active: step >= 3 }">3</div>
-                <div class="step-label">找回成功</div>
-                <div class="step-desc">设置成功</div>
-              </div>
-            </div>
-            <!-- ====== 第一步：身份验证 账号+验证码 ====== -->
-            <div v-if="step === 1">
-              <div class="input-item">
-                <div class="input-wrap">
-                  <i class="my-icon input-icon">&#xe63f;</i>
-                  <input
-                    class="input-box account-input"
-                    placeholder="请输入账号"
-                    v-model="account"
-                    @focus="showAccountTip = true"
-                    @blur="handleAccountBlur"
-                  />
-                  <span class="input-suffix">@kyhorizon.com</span>
-                </div>
-                <div class="msg-line">
-                  <span v-if="accountError" class="error-text">{{ accountError }}</span>
-                  <span v-else-if="showAccountTip" class="tip-text"
-                    >3~18个字符，可使用字母、数字、下划线，需要以字母开头</span
-                  >
-                </div>
-              </div>
-              <div class="input-item">
-                <div class="input-wrap code-wrap">
-                  <i class="my-icon input-icon">&#xe699;</i>
-                  <input
-                    class="input-box code-input"
-                    placeholder="请输入邮箱验证码"
-                    v-model="code"
-                  />
-                  <button class="get-code-btn" @click="getCode" :disabled="countDown > 0">
-                    {{ countDown > 0 ? `${countDown}s后重发` : '获取验证码' }}
-                  </button>
-                </div>
-                <div class="msg-line">
-                  <span v-if="codeError" class="error-text">{{ codeError }}</span>
-                </div>
-              </div>
-              <button class="login-btn" @click="nextStep">下一步</button>
-            </div>
-            <!-- ====== 第二步：重置密码 新密码+确认密码 ====== -->
-            <div v-if="step === 2">
-              <div class="input-item">
-                <div class="input-wrap">
-                  <i class="my-icon input-icon">&#xe654;</i>
-                  <input
-                    class="input-box pwd-input"
-                    placeholder="请输入新密码"
-                    v-model="newPwd"
-                    :type="pwdVisible ? 'text' : 'password'"
-                    @input="validatePwd"
-                    @blur="validatePwd"
-                  />
-                  <div class="pwd-icon-group">
-                    <i v-if="newPwd" class="my-icon input-clear" @click="newPwd = ''">&#xe602;</i>
-                    <i v-if="pwdVisible" class="my-icon input-eye" @click="pwdVisible = !pwdVisible"
-                      >&#xe63d;</i
-                    >
-                    <i v-else class="my-icon input-eye" @click="pwdVisible = !pwdVisible"
-                      >&#xe653;</i
-                    >
-                  </div>
-                </div>
-                <div class="msg-line">
-                  <span v-if="pwdError" class="error-text">{{ pwdError }}</span>
-                  <span v-else class="tip-text"
-                    >密码至少8个字符，必须包含字母和数字，不能包含空格及特殊符号；</span
-                  >
-                </div>
-              </div>
-              <div class="input-item">
-                <div class="input-wrap">
-                  <i class="my-icon input-icon">&#xe654;</i>
-                  <input
-                    class="input-box pwd-input"
-                    placeholder="请再次输入新密码"
-                    v-model="confirmPwd"
-                    :type="confirmPwdVisible ? 'text' : 'password'"
-                    @input="validateConfirmPwd"
-                    @blur="validateConfirmPwd"
-                  />
-                  <div class="pwd-icon-group">
-                    <i v-if="confirmPwd" class="my-icon input-clear" @click="confirmPwd = ''"
-                      >&#xe602;</i
-                    >
-                    <i
-                      v-if="confirmPwdVisible"
-                      class="my-icon input-eye"
-                      @click="confirmPwdVisible = !confirmPwdVisible"
-                      >&#xe63d;</i
-                    >
-                    <i
-                      v-else
-                      class="my-icon input-eye"
-                      @click="confirmPwdVisible = !confirmPwdVisible"
-                      >&#xe653;</i
-                    >
-                  </div>
-                </div>
-                <div class="msg-line">
-                  <span v-if="confirmPwdError" class="error-text">{{ confirmPwdError }}</span>
-                </div>
-              </div>
-              <div style="display: flex; gap: 12px">
-                <button class="login-btn back-btn" @click="preStep">上一步</button>
-                <button class="login-btn" @click="handleReset">确认重置</button>
-              </div>
-            </div>
-            <!-- ====== 第三步：找回成功 ====== -->
-            <div v-if="step === 3" class="success-wrap">
-              <div class="success-row-text">密码重置成功！{{ countNum }}s后跳转到登录界面</div>
-              <button class="login-btn" @click="goLogin">前往登录</button>
-            </div>
-            <!-- 返回登录链接：只在 step=1 身份验证页面显示 -->
-            <div v-if="step === 1" class="row-link">
-              <span class="link-item" @click="goLogin"
-                >返回登录 <i class="my-icon back-arrow">&#xe61d;</i></span
-              >
-            </div>
-            <div class="footer-text">版权所有 © 2025 KY-Horizon 自动化技术（天津）有限公司</div>
-          </div>
-        </dv-border-box-8>
-      </div>
+  <!-- <dv-full-screen-container fit="fill"> -->
+  <div class="login-container">
+    <!--底层背景图-->
+    <div class="bg-image"></div>
+    <!--数字雨组件-->
+    <BgMatrixRain />
+
+    <!-- 左上角Logo -->
+    <div class="logo-box">
+      <img src="@/assets/images/login_logo.webp" alt="浩研汇成LOGO" />
     </div>
-  </dv-full-screen-container>
+    <div class="box-wrap">
+      <dv-border-box-8 class="login-panel">
+        <div class="panel-inner">
+          <h1 class="system-title">擎工可视化系统</h1>
+          <dv-decoration-5 style="width: 400px; height: 40px" class="title-decoration" />
+          <div class="tab-text">找回密码</div>
+          <!-- ========== 三步进度条 ========== -->
+          <div class="step-wrap">
+            <div class="step-item">
+              <div class="step-circle" :class="{ active: step >= 1 }">1</div>
+              <div class="step-label">身份验证</div>
+              <div class="step-desc">邮箱验证</div>
+            </div>
+            <div class="step-line" :class="{ active: step >= 2 }"></div>
+            <div class="step-item">
+              <div class="step-circle" :class="{ active: step >= 2 }">2</div>
+              <div class="step-label">重置密码</div>
+              <div class="step-desc">重新设置密码</div>
+            </div>
+            <div class="step-line" :class="{ active: step >= 3 }"></div>
+            <div class="step-item">
+              <div class="step-circle" :class="{ active: step >= 3 }">3</div>
+              <div class="step-label">找回成功</div>
+              <div class="step-desc">设置成功</div>
+            </div>
+          </div>
+          <!-- ====== 第一步：身份验证 账号+验证码 ====== -->
+          <div v-if="step === 1">
+            <div class="input-item">
+              <div class="input-wrap">
+                <i class="my-icon input-icon">&#xe63f;</i>
+                <input
+                  class="input-box account-input"
+                  placeholder="请输入账号"
+                  v-model="account"
+                  @focus="showAccountTip = true"
+                  @blur="handleAccountBlur"
+                />
+                <span class="input-suffix">@kyhorizon.com</span>
+              </div>
+              <div class="msg-line">
+                <span v-if="accountError" class="error-text">{{ accountError }}</span>
+                <span v-else-if="showAccountTip" class="tip-text"
+                  >3~18个字符，可使用字母、数字、下划线，需要以字母开头</span
+                >
+              </div>
+            </div>
+            <div class="input-item">
+              <div class="input-wrap code-wrap">
+                <i class="my-icon input-icon">&#xe699;</i>
+                <input class="input-box code-input" placeholder="请输入邮箱验证码" v-model="code" />
+                <button class="get-code-btn" @click="getCode" :disabled="countDown > 0">
+                  {{ countDown > 0 ? `${countDown}s后重发` : '获取验证码' }}
+                </button>
+              </div>
+              <div class="msg-line">
+                <span v-if="codeError" class="error-text">{{ codeError }}</span>
+              </div>
+            </div>
+            <button class="login-btn" @click="nextStep">下一步</button>
+          </div>
+          <!-- ====== 第二步：重置密码 新密码+确认密码 ====== -->
+          <div v-if="step === 2">
+            <div class="input-item">
+              <div class="input-wrap">
+                <i class="my-icon input-icon">&#xe654;</i>
+                <input
+                  class="input-box pwd-input"
+                  placeholder="请输入新密码"
+                  v-model="newPwd"
+                  :type="pwdVisible ? 'text' : 'password'"
+                  @input="validatePwd"
+                  @blur="validatePwd"
+                />
+                <div class="pwd-icon-group">
+                  <i v-if="newPwd" class="my-icon input-clear" @click="newPwd = ''">&#xe602;</i>
+                  <i v-if="pwdVisible" class="my-icon input-eye" @click="pwdVisible = !pwdVisible"
+                    >&#xe63d;</i
+                  >
+                  <i v-else class="my-icon input-eye" @click="pwdVisible = !pwdVisible">&#xe653;</i>
+                </div>
+              </div>
+              <div class="msg-line">
+                <span v-if="pwdError" class="error-text">{{ pwdError }}</span>
+                <span v-else class="tip-text"
+                  >密码至少8个字符，必须包含字母和数字，不能包含空格及特殊符号；</span
+                >
+              </div>
+            </div>
+            <div class="input-item">
+              <div class="input-wrap">
+                <i class="my-icon input-icon">&#xe654;</i>
+                <input
+                  class="input-box pwd-input"
+                  placeholder="请再次输入新密码"
+                  v-model="confirmPwd"
+                  :type="confirmPwdVisible ? 'text' : 'password'"
+                  @input="validateConfirmPwd"
+                  @blur="validateConfirmPwd"
+                />
+                <div class="pwd-icon-group">
+                  <i v-if="confirmPwd" class="my-icon input-clear" @click="confirmPwd = ''"
+                    >&#xe602;</i
+                  >
+                  <i
+                    v-if="confirmPwdVisible"
+                    class="my-icon input-eye"
+                    @click="confirmPwdVisible = !confirmPwdVisible"
+                    >&#xe63d;</i
+                  >
+                  <i
+                    v-else
+                    class="my-icon input-eye"
+                    @click="confirmPwdVisible = !confirmPwdVisible"
+                    >&#xe653;</i
+                  >
+                </div>
+              </div>
+              <div class="msg-line">
+                <span v-if="confirmPwdError" class="error-text">{{ confirmPwdError }}</span>
+              </div>
+            </div>
+            <div style="display: flex; gap: 12px">
+              <button class="login-btn back-btn" @click="preStep">上一步</button>
+              <button class="login-btn" @click="handleReset">确认重置</button>
+            </div>
+          </div>
+          <!-- ====== 第三步：找回成功 ====== -->
+          <div v-if="step === 3" class="success-wrap">
+            <div class="success-row-text">密码重置成功！{{ countNum }}s后跳转到登录界面</div>
+            <button class="login-btn" @click="goLogin">前往登录</button>
+          </div>
+          <!-- 返回登录链接：只在 step=1 身份验证页面显示 -->
+          <div v-if="step === 1" class="row-link">
+            <span class="link-item" @click="goLogin"
+              >返回登录 <i class="my-icon back-arrow">&#xe61d;</i></span
+            >
+          </div>
+          <div class="footer-text">版权所有 © 2025 KY‑Horizon 自动化技术（天津）有限公司</div>
+        </div>
+      </dv-border-box-8>
+    </div>
+  </div>
+  <!-- </dv-full-screen-container> -->
 </template>
 <script setup>
 import { ref, watch, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { sendEmailCode, checkEmailCode, resetPassword } from '@/api/auth'
+// 引入数字雨背景组件
+import BgMatrixRain from '@/components/BgMatrixRain.vue'
+
 const router = useRouter()
 // 步骤 1身份验证 2重置密码 3成功
 const step = ref(1)
@@ -267,6 +269,12 @@ const getCode = async () => {
   }
 }
 const nextStep = async () => {
+  const val = account.value.trim()
+  // 账号为空直接显示红字提示
+  if (!val) {
+    accountError.value = '请输入账号'
+    return
+  }
   if (!validateAccount()) return
   if (!code.value.trim()) {
     codeError.value = '请输入邮箱验证码'
@@ -354,16 +362,22 @@ onUnmounted(() => {
 }
 .login-container {
   width: 100%;
-  height: 100%;
-  background: url('@/assets/images/login-bg.webp') no-repeat center center;
-  background-size: cover;
+  height: 100vh;
   display: flex;
-  align-items: flex-start;
-  justify-content: flex-end;
-  padding-right: 10%;
-  padding-top: 8%;
+  align-items: center;
+  justify-content: center;
   box-sizing: border-box;
   position: relative;
+  overflow: hidden;
+}
+.bg-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: url('@/assets/images/screen_bg.webp') no-repeat center center;
+  background-size: cover;
+  z-index: 0;
 }
 .logo-box {
   position: absolute;
@@ -378,10 +392,13 @@ onUnmounted(() => {
   filter: drop-shadow(0 0 6px rgba(80, 180, 255, 0.4));
 }
 .box-wrap {
+  position: relative;
+  z-index: 10;
   width: 520px;
   height: 680px;
   border-radius: 12px;
   overflow: hidden;
+  /* transform: translateY(-40px); */
 }
 .login-panel {
   width: 100%;
