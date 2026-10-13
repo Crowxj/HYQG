@@ -430,8 +430,8 @@ onUnmounted(() => {
 }
 .logo-box {
   position: absolute;
-  top: 24px;
-  left: 24px;
+  top: 20px;
+  left: 20px;
   z-index: 99;
 }
 .logo-box img {
