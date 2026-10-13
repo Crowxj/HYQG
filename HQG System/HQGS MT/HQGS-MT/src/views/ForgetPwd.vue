@@ -5,6 +5,7 @@
     <div class="bg-image"></div>
     <!--数字雨组件-->
     <BgMatrixRain />
+    <BgSnow />
 
     <!-- 左上角Logo -->
     <div class="logo-box">
@@ -161,6 +162,7 @@ import { useRouter } from 'vue-router'
 import { sendEmailCode, checkEmailCode, resetPassword } from '@/api/auth'
 // 引入数字雨背景组件
 import BgMatrixRain from '@/components/BgMatrixRain.vue'
+import BgSnow from '@/components/BgSnow.vue'
 
 const router = useRouter()
 // 步骤 1身份验证 2重置密码 3成功

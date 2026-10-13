@@ -5,6 +5,7 @@
     <div class="bg-image"></div>
     <!--数字雨组件-->
     <BgMatrixRain />
+    <BgSnow />
     <!-- 左上角Logo -->
     <div class="logo-box">
       <img src="@/assets/images/login_logo.webp" alt="浩研汇成LOGO" />
@@ -167,6 +168,7 @@ import { useRouter } from 'vue-router'
 import { sendEmailCode, checkEmailCode, register } from '@/api/auth'
 //引入数字雨组件
 import BgMatrixRain from '@/components/BgMatrixRain.vue'
+import BgSnow from '@/components/BgSnow.vue'
 const router = useRouter()
 // 注册分步：step=1 账号验证码；step=2 设置密码
 const step = ref(1)

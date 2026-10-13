@@ -4,6 +4,7 @@
     <div class="bg-image"></div>
     <!-- 中间层：抽离出来的数字雨组件 -->
     <BgMatrixRain />
+    <BgSnow />
 
     <div class="logo-box">
       <img src="@/assets/images/login_logo.webp" alt="浩研汇成LOGO" />
@@ -75,6 +76,7 @@ import { useRouter } from 'vue-router'
 import { login } from '@/api/auth'
 // 引入抽离的数字雨组件
 import BgMatrixRain from '@/components/BgMatrixRain.vue'
+import BgSnow from '@/components/BgSnow.vue'
 
 const router = useRouter()
 const account = ref('')
